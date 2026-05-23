@@ -1,10 +1,12 @@
 # Stage 1: Install dependencies
 FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable pnpm && pnpm approve-builds sharp && pnpm install --frozen-lockfile
+RUN corepack enable pnpm \
+    && node -e "const p=require('./package.json'); p.pnpm={onlyBuiltDependencies:['sharp']}; require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2))" \
+    && pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
 FROM node:22-alpine AS builder
