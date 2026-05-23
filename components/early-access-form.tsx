@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxVaHc0ZZSK6Md9k0qI-BH_fvZbvWYe603gcAcA-C4h07y0wBpqmZSA3vX8CBlgrpb7FQ/exec";
+  "https://script.google.com/macros/s/AKfycbw0HL5E2xYxmeITG1u0P4vZ5YrW-a5rJOUe3thzf8w4xRG0Z8vinGn-WAcUWipRim3-cA/exec";
 
 export function EarlyAccessForm() {
   const [email, setEmail] = useState("");
