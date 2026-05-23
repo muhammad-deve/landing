@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbxVaHc0ZZSK6Md9k0qI-BH_fvZbvWYe603gcAcA-C4h07y0wBpqmZSA3vX8CBlgrpb7FQ/exec";
+
 export function EarlyAccessForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -14,14 +17,28 @@ export function EarlyAccessForm() {
 
     setStatus("loading");
 
-    // Simulate API call - replace with actual endpoint
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      // Format date as DD/MM/YYYY HH:MM
+      const now = new Date();
+      const date = now.toLocaleDateString("en-GB"); // DD/MM/YYYY
+      const time = now.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const datetime = `${date} ${time}`;
 
-    // TODO: Connect to your backend to store emails
-    // Example: await fetch('/api/waitlist', { method: 'POST', body: JSON.stringify({ email }) })
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, date: datetime }),
+      });
 
-    setStatus("success");
-    setEmail("");
+      setStatus("success");
+      setEmail("");
+    } catch {
+      setStatus("error");
+    }
   };
 
   if (status === "success") {
@@ -52,6 +69,9 @@ export function EarlyAccessForm() {
       >
         {status === "loading" ? "..." : "Notify me"}
       </Button>
+      {status === "error" && (
+        <p className="text-xs text-red-500">Something went wrong. Please try again.</p>
+      )}
     </form>
   );
 }
