@@ -3,11 +3,8 @@ FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable pnpm \
-    && pnpm config set ignore-build-scripts false \
-    && pnpm install --frozen-lockfile --ignore-scripts \
-    && pnpm rebuild sharp
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
 FROM node:22-alpine AS builder
