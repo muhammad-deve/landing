@@ -5,8 +5,9 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable pnpm \
-    && node -e "const p=require('./package.json'); p.pnpm={onlyBuiltDependencies:['sharp']}; require('fs').writeFileSync('./package.json',JSON.stringify(p,null,2))" \
-    && pnpm install --frozen-lockfile
+    && pnpm config set ignore-build-scripts false \
+    && pnpm install --frozen-lockfile --ignore-scripts \
+    && pnpm rebuild sharp
 
 # Stage 2: Build the application
 FROM node:22-alpine AS builder
