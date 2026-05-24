@@ -4,7 +4,8 @@ RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate \
+    && pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
 FROM node:22-alpine AS builder
@@ -13,7 +14,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN corepack enable pnpm && pnpm run build
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate && pnpm run build
 
 # Stage 3: Production runner
 FROM node:22-alpine AS runner
