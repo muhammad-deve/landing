@@ -4,50 +4,48 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbw0HL5E2xYxmeITG1u0P4vZ5YrW-a5rJOUe3thzf8w4xRG0Z8vinGn-WAcUWipRim3-cA/exec";
-
 export function EarlyAccessForm() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    const submittedEmail = email.trim();
+    if (!submittedEmail) return;
 
     setStatus("loading");
+    setEmail("");
+    window.setTimeout(() => setStatus("success"), 700);
 
-    try {
-      // Format date as DD/MM/YYYY HH:MM
-      const now = new Date();
-      const date = now.toLocaleDateString("en-GB"); // DD/MM/YYYY
-      const time = now.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      const datetime = `${date} ${time}`;
-
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, date: datetime }),
-      });
-
-      setStatus("success");
-      setEmail("");
-    } catch {
-      setStatus("error");
-    }
+    void fetch("/api/early-access", {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: submittedEmail }),
+    }).catch((error) => {
+      console.error("Unable to save early access email", error);
+    });
   };
 
   if (status === "success") {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
-        <span className="text-primary">&#10003;</span>
-        <span className="text-sm text-foreground">
+      <div className="flex w-full max-w-md flex-col gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 sm:flex-row sm:items-center">
+        <div className="flex flex-1 items-center gap-2">
+          <span className="text-primary">&#10003;</span>
+          <span className="text-sm text-foreground">
           You&apos;re on the list. We&apos;ll notify you when GoPort launches.
-        </span>
+          </span>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setStatus("idle")}
+          className="h-8 px-2 text-xs text-primary hover:bg-primary/10 hover:text-primary"
+        >
+          Add another
+        </Button>
       </div>
     );
   }
@@ -67,11 +65,11 @@ export function EarlyAccessForm() {
         disabled={status === "loading"}
         className="h-11 bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90"
       >
-        {status === "loading" ? "..." : "Notify me"}
+        {status === "loading" && (
+          <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+        )}
+        <span>{status === "loading" ? "Submitting" : "Notify me"}</span>
       </Button>
-      {status === "error" && (
-        <p className="text-xs text-red-500">Something went wrong. Please try again.</p>
-      )}
     </form>
   );
 }
