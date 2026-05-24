@@ -50,7 +50,7 @@ export default function Home() {
           {/* Early Access Form */}
           <div className="flex w-full flex-col items-center gap-3">
             <p className="text-sm text-muted-foreground">
-              Get notified when we launch!!!
+              Get notified when we launch
             </p>
             <EarlyAccessForm />
           </div>
