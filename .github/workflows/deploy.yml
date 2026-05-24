@@ -19,4 +19,7 @@ jobs:
             cd ~/personal/GoPort/landing
             git pull origin main
             cd ..
-            docker-compose up -d --build --no-deps landing
+            docker-compose build --no-cache landing
+            docker-compose stop landing || true
+            docker-compose rm -f landing || true
+            docker-compose up -d --no-deps landing
