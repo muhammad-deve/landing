@@ -58,12 +58,12 @@ export function EarlyAccessForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="h-11 flex-1 border-border bg-card font-mono text-sm placeholder:text-muted-foreground focus-visible:ring-primary"
+        className="min-h-12 flex-1 border-border bg-card px-4 py-3 font-mono text-base leading-normal placeholder:text-muted-foreground focus-visible:ring-primary sm:min-h-11 sm:py-2 sm:text-sm"
       />
       <Button
         type="submit"
         disabled={status === "loading"}
-        className="h-11 bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90"
+        className="h-12 bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90 sm:h-11"
       >
         {status === "loading" && (
           <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
