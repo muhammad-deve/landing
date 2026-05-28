@@ -7,7 +7,7 @@ export function TerminalPreview() {
   ];
 
   return (
-    <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-primary/15 bg-[#050505]/95 shadow-2xl shadow-primary/5">
+    <div className="w-full max-w-[840px] overflow-hidden rounded-lg border border-primary/15 bg-[#050505]/95 shadow-2xl shadow-primary/5">
       <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.02] px-4 py-3">
         <div className="flex gap-1.5">
           <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
@@ -17,20 +17,20 @@ export function TerminalPreview() {
         <span className="ml-2 font-mono text-xs text-muted-foreground">terminal</span>
       </div>
 
-      <div className="overflow-x-auto p-5 text-left font-mono text-sm leading-relaxed">
+      <div className="overflow-x-auto p-6 text-left font-mono text-sm leading-relaxed">
         <div className="flex">
           <span className="text-muted-foreground">$</span>
-          <span className="ml-2 text-foreground">goport http 8080</span>
+          <span className="ml-2 font-semibold text-foreground">goport http 8080</span>
         </div>
 
         <div className="mt-5 min-w-[36rem] space-y-1">
           <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
             <span className="text-muted-foreground">Dashboard</span>
-            <span className="text-foreground">http://127.0.0.1:4040</span>
+            <span className="font-semibold text-foreground">http://127.0.0.1:4040</span>
           </div>
           <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
             <span className="text-muted-foreground">Region</span>
-            <span className="text-foreground">Europe (eu)</span>
+            <span className="font-semibold text-foreground">Europe (eu)</span>
           </div>
           <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
             <span className="text-muted-foreground">Status</span>
@@ -43,14 +43,14 @@ export function TerminalPreview() {
             <span className="text-muted-foreground">Forwarding</span>
             <span>
               <span className="text-primary">{"https://abc123.goport.uz"}</span>
-              <span className="text-muted-foreground">{" -> "}</span>
-              <span className="text-foreground">{"localhost:8080"}</span>
+              <span className="text-muted-foreground">{" \u2192 "}</span>
+              <span className="font-semibold text-foreground">{"localhost:8080"}</span>
             </span>
           </div>
         </div>
 
         <div className="mt-6 min-w-[36rem]">
-          <div className="text-foreground">HTTP Requests</div>
+          <div className="font-semibold text-foreground">HTTP Requests</div>
           <div className="text-muted-foreground/80">-------------</div>
           <div className="mt-2 space-y-1 text-xs">
             {requests.map((request) => (
@@ -60,8 +60,8 @@ export function TerminalPreview() {
               >
                 <span className="text-muted-foreground">{request.time}</span>
                 <span className="text-muted-foreground">{request.method}</span>
-                <span className="text-foreground">{request.path}</span>
-                <span className="text-primary">{request.status}</span>
+                <span className="font-semibold text-foreground">{request.path}</span>
+                <span className="font-semibold text-primary">{request.status}</span>
               </div>
             ))}
           </div>

@@ -36,7 +36,7 @@ export default function Home() {
       </div>
 
       <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
-        <div className="flex w-full max-w-3xl flex-col items-center gap-12 text-center">
+        <div className="flex w-full max-w-4xl flex-col items-center gap-12 text-center">
           {/* Hero */}
           <div className="flex flex-col items-center gap-4">
             <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
