@@ -2,9 +2,7 @@
   "name": "my-project",
   "version": "0.1.0",
   "private": true,
-  "pnpm": {
-    "onlyBuiltDependencies": ["sharp"]
-  },
+  "packageManager": "pnpm@10.15.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
