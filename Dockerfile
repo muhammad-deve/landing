@@ -1,21 +1,15 @@
-# syntax=docker/dockerfile:1.7
-
 # Stage 1: Install dependencies and build the application
 FROM node:22-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
 
 RUN apk add --no-cache libc6-compat python3 make g++ \
     && corepack enable \
-    && corepack prepare pnpm@10.15.1 --activate \
-    && pnpm config set store-dir /pnpm/store
+    && corepack prepare pnpm@10.15.1 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN --mount=type=cache,id=goport-landing-pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
