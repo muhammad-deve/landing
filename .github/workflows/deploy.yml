@@ -17,8 +17,21 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
           script: |
+            set -e
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            compose() {
+              if docker compose version >/dev/null 2>&1; then
+                docker compose "$@"
+              else
+                docker-compose "$@"
+              fi
+            }
+
             cd ~/personal/GoPort/landing
             git pull --ff-only origin main
             cd ..
-            docker-compose build landing
-            docker-compose up -d --no-deps landing
+            compose build landing
+            compose rm -sf landing || true
+            docker rm -f goport-landing || true
+            compose up -d --no-deps landing
