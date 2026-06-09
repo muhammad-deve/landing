@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Sparkles } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppleIcon, WindowsIcon, LinuxIcon, DockerIcon } from "@/components/icons";
 
@@ -97,7 +97,9 @@ export function InstallCommand() {
           className="flex size-8 shrink-0 cursor-pointer items-center justify-center self-start rounded-md text-muted-foreground transition-all hover:bg-white/10 hover:text-foreground active:scale-90"
         >
           {copied ? (
-            <Check className="size-4 text-primary" />
+            <span className="text-base leading-none" aria-hidden>
+              ✅
+            </span>
           ) : (
             <Copy className="size-4" />
           )}

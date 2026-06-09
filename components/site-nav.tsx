@@ -14,10 +14,40 @@ const NAV_LINKS = [
 
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    const update = () => {
+      const y = window.scrollY;
+      setScrolled(y > 12);
+
+      const delta = y - lastY;
+
+      // Near the very top: always show.
+      if (y < 80) {
+        setHidden(false);
+      } else if (delta > 6) {
+        // Deliberate scroll down -> hide.
+        setHidden(true);
+      } else if (delta < -6) {
+        // Deliberate scroll up -> show.
+        setHidden(false);
+      }
+
+      lastY = y;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    };
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -26,12 +56,13 @@ export function SiteNav() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+        hidden ? "-translate-y-full" : "translate-y-0",
         scrolled
           ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
           : "border-b border-transparent bg-transparent",
       )}
     >
-      <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
+      <nav className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-6 pt-3 sm:h-24 sm:pt-4">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
           <GoPortLogo className="h-7 w-auto text-foreground" />
         </Link>

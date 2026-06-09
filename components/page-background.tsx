@@ -3,16 +3,16 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Minimal, cursor-reactive dot grid rendered on a canvas.
+ * Minimal, cursor-reactive dot grid with a gravity well.
  *
- * Each dot is drawn at a fixed grid position; its brightness/size is a
- * function of its distance to the cursor, so dots clearly "light up" green
- * as the pointer passes over them and fade back to a faint neutral otherwise.
+ * Each dot has a fixed "home" position on a grid. The cursor acts as a
+ * gravity point: nearby dots are pulled toward it (and brighten green),
+ * then spring back to home when the cursor moves away.
  *
- * Performance: the grid only redraws on pointer movement (rAF-throttled) and
- * on resize — there is no idle animation loop. It's a FIXED,
- * pointer-events-none layer behind content (-z-10), so it can never block
- * clicks or affect hydration.
+ * Performance: a single rAF loop runs only while dots are still settling or
+ * the cursor is active; it idles out once everything is at rest. It's a
+ * FIXED, pointer-events-none layer behind content (-z-10), so it can never
+ * block clicks or affect hydration.
  */
 export function PageBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,20 +23,31 @@ export function PageBackground() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const GAP = 30; // grid spacing in px
-    const RADIUS = 130; // cursor influence radius
-    const BASE = "rgba(148, 163, 184, 0.10)"; // faint idle dot
-    // GoPort green (oklch 0.85 0.2 155) ≈ this rgb
-    const GLOW_R = 74;
-    const GLOW_G = 222;
-    const GLOW_B = 128;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    const GAP = 22; // grid spacing (smaller = more dots)
+    const RADIUS = 160; // cursor influence radius
+    const PULL = 0.32; // how strongly dots are pulled toward the cursor
+    const EASE = 0.12; // how quickly dots move toward their target
+    const SPRING = 0.12; // how quickly dots return home
+    const GLOW = "74, 222, 128"; // GoPort green rgb
+
+    type Dot = { hx: number; hy: number; x: number; y: number };
+    let dots: Dot[] = [];
     let width = 0;
     let height = 0;
     let dpr = 1;
-    // start off-screen so nothing is lit until the user moves
-    const mouse = { x: -9999, y: -9999 };
+    const mouse = { x: -9999, y: -9999, active: false };
     let raf = 0;
+
+    const buildGrid = () => {
+      dots = [];
+      for (let x = GAP; x < width; x += GAP) {
+        for (let y = GAP; y < height; y += GAP) {
+          dots.push({ hx: x, hy: y, x, y });
+        }
+      }
+    };
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -47,55 +58,89 @@ export function PageBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw();
+      buildGrid();
+      renderStatic();
     };
 
-    const draw = () => {
+    // One static frame (used for reduced-motion or when at rest).
+    const renderStatic = () => {
       ctx.clearRect(0, 0, width, height);
-      for (let x = GAP; x < width; x += GAP) {
-        for (let y = GAP; y < height; y += GAP) {
-          const dx = x - mouse.x;
-          const dy = y - mouse.y;
-          const dist = Math.hypot(dx, dy);
+      for (const d of dots) {
+        ctx.beginPath();
+        ctx.arc(d.hx, d.hy, 1, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(148, 163, 184, 0.10)";
+        ctx.fill();
+      }
+    };
 
+    const step = () => {
+      ctx.clearRect(0, 0, width, height);
+      let moving = false;
+
+      for (const d of dots) {
+        let tx = d.hx;
+        let ty = d.hy;
+        let lit = 0;
+
+        if (mouse.active) {
+          const dx = mouse.x - d.hx;
+          const dy = mouse.y - d.hy;
+          const dist = Math.hypot(dx, dy);
           if (dist < RADIUS) {
-            const t = 1 - dist / RADIUS; // 0..1, brighter near cursor
-            const alpha = 0.12 + t * 0.7;
-            const r = 1 + t * 1.6;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${GLOW_R}, ${GLOW_G}, ${GLOW_B}, ${alpha})`;
-            ctx.fill();
-          } else {
-            ctx.beginPath();
-            ctx.arc(x, y, 1, 0, Math.PI * 2);
-            ctx.fillStyle = BASE;
-            ctx.fill();
+            const t = 1 - dist / RADIUS; // 0..1
+            lit = t;
+            // pull the dot's target toward the cursor (gravity)
+            tx = d.hx + dx * PULL * t;
+            ty = d.hy + dy * PULL * t;
           }
         }
+
+        // ease current position toward target (or spring home)
+        const k = lit > 0 ? EASE : SPRING;
+        d.x += (tx - d.x) * k;
+        d.y += (ty - d.y) * k;
+
+        if (Math.abs(tx - d.x) > 0.05 || Math.abs(ty - d.y) > 0.05) moving = true;
+
+        const alpha = 0.1 + lit * 0.75;
+        const r = 1 + lit * 1.8;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = lit > 0 ? `rgba(${GLOW}, ${alpha})` : "rgba(148, 163, 184, 0.10)";
+        ctx.fill();
       }
+
+      // keep animating while the cursor is active or dots are still settling
+      if (mouse.active || moving) {
+        raf = requestAnimationFrame(step);
+      } else {
+        raf = 0;
+        renderStatic();
+      }
+    };
+
+    const ensureLoop = () => {
+      if (!raf) raf = requestAnimationFrame(step);
     };
 
     const onMove = (e: MouseEvent) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      if (raf) return;
-      raf = window.requestAnimationFrame(() => {
-        draw();
-        raf = 0;
-      });
+      mouse.active = true;
+      if (!reduce) ensureLoop();
     };
 
     const onLeave = () => {
-      mouse.x = -9999;
-      mouse.y = -9999;
-      draw();
+      mouse.active = false;
+      if (!reduce) ensureLoop();
     };
 
     resize();
     window.addEventListener("resize", resize);
-    window.addEventListener("mousemove", onMove, { passive: true });
-    document.addEventListener("mouseleave", onLeave);
+    if (!reduce) {
+      window.addEventListener("mousemove", onMove, { passive: true });
+      document.addEventListener("mouseleave", onLeave);
+    }
 
     return () => {
       window.removeEventListener("resize", resize);
@@ -110,7 +155,7 @@ export function PageBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#070b10]"
     >
-      {/* interactive dot grid */}
+      {/* interactive gravity dot grid */}
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
       {/* soft ambient glow at the top */}

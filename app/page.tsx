@@ -22,12 +22,7 @@ export default function Home() {
         <Features />
 
         <section id="how-it-works" className="mx-auto w-full max-w-5xl px-6 py-24">
-          <SectionHeader
-            className="mb-14"
-            eyebrow="How it works"
-            title="A secure tunnel, end to end"
-            description="One command opens an encrypted path from the public internet straight to your localhost."
-          />
+          <SectionHeader className="mb-14" title="How it works" />
           <TunnelDiagram />
         </section>
 
