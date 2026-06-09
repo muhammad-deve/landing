@@ -17,27 +17,17 @@ export function SiteNav() {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    let lastY = window.scrollY;
     let ticking = false;
 
     const update = () => {
       const y = window.scrollY;
       setScrolled(y > 12);
 
-      const delta = y - lastY;
+      // The navbar only lives at the very top of the page. The moment you
+      // leave the top it hides and stays hidden — small upward scrolls no
+      // longer flash it back in. Scroll back to the top to bring it back.
+      setHidden(y >= 80);
 
-      // Near the very top: always show.
-      if (y < 80) {
-        setHidden(false);
-      } else if (delta > 6) {
-        // Deliberate scroll down -> hide.
-        setHidden(true);
-      } else if (delta < -6) {
-        // Deliberate scroll up -> show.
-        setHidden(false);
-      }
-
-      lastY = y;
       ticking = false;
     };
 

@@ -40,6 +40,19 @@ export function PageBackground() {
     const mouse = { x: -9999, y: -9999, active: false };
     let raf = 0;
 
+    // How strongly the cursor interaction shows, based on scroll position.
+    // 1 at the very top (hero) and eases toward ~0 by the time you reach the
+    // bottom (FAQ), so the hover effect is barely noticeable down there.
+    let influence = 1;
+
+    const computeInfluence = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? window.scrollY / max : 0;
+      // ease-out: stays lively near the top, fades quickly lower down.
+      const eased = Math.pow(1 - Math.min(Math.max(progress, 0), 1), 1.6);
+      influence = eased;
+    };
+
     const buildGrid = () => {
       dots = [];
       for (let x = GAP; x < width; x += GAP) {
@@ -87,7 +100,7 @@ export function PageBackground() {
           const dy = mouse.y - d.hy;
           const dist = Math.hypot(dx, dy);
           if (dist < RADIUS) {
-            const t = 1 - dist / RADIUS; // 0..1
+            const t = (1 - dist / RADIUS) * influence; // 0..1, faded by scroll
             lit = t;
             // pull the dot's target toward the cursor (gravity)
             tx = d.hx + dx * PULL * t;
@@ -135,17 +148,25 @@ export function PageBackground() {
       if (!reduce) ensureLoop();
     };
 
+    const onScroll = () => {
+      computeInfluence();
+      if (!reduce && mouse.active) ensureLoop();
+    };
+
+    computeInfluence();
     resize();
     window.addEventListener("resize", resize);
     if (!reduce) {
       window.addEventListener("mousemove", onMove, { passive: true });
       document.addEventListener("mouseleave", onLeave);
+      window.addEventListener("scroll", onScroll, { passive: true });
     }
 
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);

@@ -36,7 +36,7 @@ const FAQS = [
 export function Faq() {
   return (
     <section id="faq" className="mx-auto w-full max-w-3xl px-6 py-24">
-      <SectionHeader className="mb-12" title="FAQ" />
+      <SectionHeader className="mb-12" title="FAQ" titleClassName="text-primary" />
 
       <Accordion type="single" collapsible className="w-full">
         {FAQS.map((faq, i) => (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Sparkles } from "lucide-react";
+import { Copy, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppleIcon, WindowsIcon, LinuxIcon, DockerIcon } from "@/components/icons";
 
@@ -41,12 +41,21 @@ export function InstallCommand() {
   const isAi = platform.id === "ai";
 
   const copy = async () => {
+    const text = platform.command;
     try {
-      await navigator.clipboard.writeText(platform.command);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        fallbackCopy(text);
+      }
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard unavailable */
+      // Clipboard API can fail in non-secure contexts — fall back to execCommand.
+      if (fallbackCopy(text)) {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1800);
+      }
     }
   };
 
@@ -94,19 +103,41 @@ export function InstallCommand() {
           type="button"
           onClick={copy}
           aria-label={isAi ? "Copy prompt" : "Copy command"}
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center self-start rounded-md text-muted-foreground transition-all hover:bg-white/10 hover:text-foreground active:scale-90"
+          title={copied ? "Copied!" : "Copy to clipboard"}
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center self-start rounded-md text-muted-foreground transition-colors duration-200 hover:bg-white/10 hover:text-foreground"
         >
-          {copied ? (
-            <span className="text-base leading-none" aria-hidden>
-              ✅
-            </span>
-          ) : (
-            <Copy className="size-4" />
-          )}
+          <span
+            key={copied ? "check" : "copy"}
+            className="flex items-center justify-center animate-in fade-in zoom-in-50 duration-150"
+          >
+            {copied ? (
+              <Check className="size-4 text-primary" />
+            ) : (
+              <Copy className="size-4" />
+            )}
+          </span>
         </button>
       </div>
     </div>
   );
+}
+
+/** Copies text without the async Clipboard API (works in non-secure contexts). */
+function fallbackCopy(text: string): boolean {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 /** Lightweight syntax coloring for the install command. */

@@ -5,13 +5,14 @@ interface SectionHeaderProps {
   title: string;
   description?: string;
   className?: string;
+  titleClassName?: string;
 }
 
 /**
  * Shared, symmetric section header. Every section uses the same type scale
  * and spacing so headings stay proportional to one another across the page.
  */
-export function SectionHeader({ eyebrow, title, description, className }: SectionHeaderProps) {
+export function SectionHeader({ eyebrow, title, description, className, titleClassName }: SectionHeaderProps) {
   return (
     <div className={cn("mx-auto max-w-2xl text-center", className)}>
       {eyebrow ? (
@@ -19,7 +20,12 @@ export function SectionHeader({ eyebrow, title, description, className }: Sectio
           {eyebrow}
         </span>
       ) : null}
-      <h2 className="mt-3 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+      <h2
+        className={cn(
+          "mt-3 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl",
+          titleClassName,
+        )}
+      >
         {title}
       </h2>
       {description ? (
