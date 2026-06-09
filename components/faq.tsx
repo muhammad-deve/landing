@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { SectionHeader } from "@/components/section-header";
 
 const FAQS = [
   {
@@ -34,10 +35,8 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="mx-auto w-full max-w-3xl px-6 py-20">
-      <h2 className="mb-8 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-        FAQ
-      </h2>
+    <section id="faq" className="mx-auto w-full max-w-3xl px-6 py-24">
+      <SectionHeader className="mb-12" eyebrow="FAQ" title="Questions, answered" />
 
       <Accordion type="single" collapsible className="w-full">
         {FAQS.map((faq, i) => (

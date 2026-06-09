@@ -6,14 +6,15 @@ import { TunnelDiagram } from "@/components/tunnel-diagram";
 import { Faq } from "@/components/faq";
 import { SiteFooter } from "@/components/site-footer";
 import { PageBackground } from "@/components/page-background";
+import { SectionHeader } from "@/components/section-header";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative z-0 flex min-h-screen flex-col">
       <PageBackground />
       <SiteNav />
 
-      <main className="flex-1">
+      <main className="relative z-10 flex-1">
         <Hero />
 
         <InstallSection />
@@ -21,15 +22,12 @@ export default function Home() {
         <Features />
 
         <section id="how-it-works" className="mx-auto w-full max-w-5xl px-6 py-24">
-          <div className="mx-auto mb-14 max-w-2xl text-center">
-            <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-              How it works
-            </h2>
-            <p className="mt-4 text-pretty text-muted-foreground">
-              One command opens an encrypted path from the public internet straight to your
-              localhost.
-            </p>
-          </div>
+          <SectionHeader
+            className="mb-14"
+            eyebrow="How it works"
+            title="A secure tunnel, end to end"
+            description="One command opens an encrypted path from the public internet straight to your localhost."
+          />
           <TunnelDiagram />
         </section>
 

@@ -3,216 +3,125 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Interactive dark-mode background:
- *  - a dotted grid + soft ambient glows (static, decorative)
- *  - a spotlight that follows the cursor
- *  - a thin layer of drifting particles that gently lean toward the cursor
+ * Minimal, cursor-reactive dot grid rendered on a canvas.
  *
- * Everything is purely decorative and respects prefers-reduced-motion.
+ * Each dot is drawn at a fixed grid position; its brightness/size is a
+ * function of its distance to the cursor, so dots clearly "light up" green
+ * as the pointer passes over them and fade back to a faint neutral otherwise.
+ *
+ * Performance: the grid only redraws on pointer movement (rAF-throttled) and
+ * on resize — there is no idle animation loop. It's a FIXED,
+ * pointer-events-none layer behind content (-z-10), so it can never block
+ * clicks or affect hydration.
  */
 export function PageBackground() {
-  const spotlightRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Cursor-following spotlight (cheap, no re-render).
-  useEffect(() => {
-    const el = spotlightRef.current;
-    if (!el) return;
-
-    let raf = 0;
-    let targetX = window.innerWidth / 2;
-    let targetY = window.innerHeight * 0.3;
-    let x = targetX;
-    let y = targetY;
-
-    const onMove = (e: MouseEvent) => {
-      targetX = e.clientX;
-      targetY = e.clientY;
-    };
-
-    const tick = () => {
-      x += (targetX - x) * 0.08;
-      y += (targetY - y) * 0.08;
-      el.style.transform = `translate(${x}px, ${y}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-
-    window.addEventListener("mousemove", onMove, { passive: true });
-    raf = requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // Particle field that reacts to the cursor.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const GAP = 30; // grid spacing in px
+    const RADIUS = 130; // cursor influence radius
+    const BASE = "rgba(148, 163, 184, 0.10)"; // faint idle dot
+    // GoPort green (oklch 0.85 0.2 155) ≈ this rgb
+    const GLOW_R = 74;
+    const GLOW_G = 222;
+    const GLOW_B = 128;
 
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    // start off-screen so nothing is lit until the user moves
+    const mouse = { x: -9999, y: -9999 };
+    let raf = 0;
 
-    const COUNT = Math.min(70, Math.floor((width * height) / 26000));
-    const mouse = { x: width / 2, y: height / 2, active: false };
-
-    type P = { x: number; y: number; vx: number; vy: number; r: number };
-    const particles: P[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
-      r: Math.random() * 1.6 + 0.6,
-    }));
-
-    const onResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
     };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+      for (let x = GAP; x < width; x += GAP) {
+        for (let y = GAP; y < height; y += GAP) {
+          const dx = x - mouse.x;
+          const dy = y - mouse.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < RADIUS) {
+            const t = 1 - dist / RADIUS; // 0..1, brighter near cursor
+            const alpha = 0.12 + t * 0.7;
+            const r = 1 + t * 1.6;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${GLOW_R}, ${GLOW_G}, ${GLOW_B}, ${alpha})`;
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.arc(x, y, 1, 0, Math.PI * 2);
+            ctx.fillStyle = BASE;
+            ctx.fill();
+          }
+        }
+      }
+    };
+
     const onMove = (e: MouseEvent) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      mouse.active = true;
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        draw();
+        raf = 0;
+      });
     };
+
     const onLeave = () => {
-      mouse.active = false;
+      mouse.x = -9999;
+      mouse.y = -9999;
+      draw();
     };
 
-    const LINK_DIST = 130;
-    const MOUSE_DIST = 200;
-
-    let raf = 0;
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      for (const p of particles) {
-        // drift
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // gentle pull toward cursor
-        if (mouse.active) {
-          const dx = mouse.x - p.x;
-          const dy = mouse.y - p.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < MOUSE_DIST && dist > 0.01) {
-            const force = (1 - dist / MOUSE_DIST) * 0.4;
-            p.x += (dx / dist) * force;
-            p.y += (dy / dist) * force;
-          }
-        }
-
-        // wrap around edges
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(110, 231, 183, 0.5)";
-        ctx.fill();
-      }
-
-      // link nearby particles
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const a = particles[i];
-          const b = particles[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < LINK_DIST) {
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(52, 211, 153, ${0.12 * (1 - dist / LINK_DIST)})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-
-        // link to cursor
-        if (mouse.active) {
-          const a = particles[i];
-          const dx = a.x - mouse.x;
-          const dy = a.y - mouse.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < MOUSE_DIST) {
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = `rgba(52, 211, 153, ${0.18 * (1 - dist / MOUSE_DIST)})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-      }
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    if (!reduce) {
-      window.addEventListener("resize", onResize);
-      window.addEventListener("mousemove", onMove, { passive: true });
-      window.addEventListener("mouseleave", onLeave);
-      raf = requestAnimationFrame(draw);
-    } else {
-      // still render a single static frame of dots
-      for (const p of particles) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(110, 231, 183, 0.4)";
-        ctx.fill();
-      }
-    }
+    resize();
+    window.addEventListener("resize", resize);
+    window.addEventListener("mousemove", onMove, { passive: true });
+    document.addEventListener("mouseleave", onLeave);
 
     return () => {
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
-      cancelAnimationFrame(raf);
+      document.removeEventListener("mouseleave", onLeave);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* base */}
-      <div className="absolute inset-0 bg-background" />
-
-      {/* dotted grid */}
-      <div
-        className="absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
-          backgroundSize: "26px 26px",
-          maskImage: "radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 100%)",
-        }}
-      />
-
-      {/* interactive particle field */}
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#070b10]"
+    >
+      {/* interactive dot grid */}
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-      {/* ambient glows */}
-      <div className="absolute left-1/2 top-[-15%] h-[480px] w-[820px] -translate-x-1/2 rounded-full bg-primary/10 blur-[140px]" />
-      <div className="absolute right-[-10%] top-[40%] h-[400px] w-[500px] rounded-full bg-emerald-500/5 blur-[160px]" />
+      {/* soft ambient glow at the top */}
+      <div className="absolute left-1/2 top-[-20%] h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-primary/8 blur-[130px]" />
 
-      {/* cursor spotlight */}
+      {/* gentle vignette */}
       <div
-        ref={spotlightRef}
-        className="absolute left-0 top-0 h-[420px] w-[420px] rounded-full will-change-transform"
+        className="absolute inset-0"
         style={{
-          marginLeft: "-210px",
-          marginTop: "-210px",
           background:
-            "radial-gradient(circle, color-mix(in oklch, var(--primary) 14%, transparent) 0%, transparent 65%)",
+            "radial-gradient(ellipse 130% 100% at 50% 35%, transparent 55%, #070b10 95%)",
         }}
       />
     </div>

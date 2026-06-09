@@ -192,3 +192,26 @@
     animation: none;
   }
 }
+
+/* ---- Minimal interactive background ---- */
+
+/* Very slow, subtle breathing for the ambient glow. */
+@keyframes ambient-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-ambient-breathe {
+  animation: ambient-breathe 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ambient-breathe {
+    animation: none;
+  }
+}

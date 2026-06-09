@@ -65,7 +65,7 @@ export function InstallCommand() {
               aria-pressed={i === active}
               title={p.label}
               className={cn(
-                "group relative flex size-11 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 hover:scale-105 active:scale-90",
+                "group relative flex size-11 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 active:scale-95",
                 i === active
                   ? "border-primary/50 bg-primary/20 text-primary shadow-[0_0_22px_-4px] shadow-primary/50"
                   : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-white/5 hover:text-foreground",

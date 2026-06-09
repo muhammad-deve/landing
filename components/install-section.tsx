@@ -7,7 +7,7 @@ export function InstallSection() {
   return (
     <section className="relative mx-auto w-full max-w-3xl px-6 py-24">
       <div className="flex flex-col items-center text-center">
-        <h2 className="text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+        <h2 className="text-balance text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Try GoPort by sharing a local app.{" "}
           <span className="bg-gradient-to-r from-primary to-emerald-300 bg-clip-text italic text-transparent">
             Right now.

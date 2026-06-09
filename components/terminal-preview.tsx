@@ -7,8 +7,8 @@ export function TerminalPreview() {
   ];
 
   return (
-    <div className="w-full max-w-[840px] overflow-hidden rounded-lg border border-primary/15 bg-[#050505]/95 shadow-2xl shadow-primary/5">
-      <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.02] px-4 py-3">
+    <div className="w-full max-w-[840px] overflow-hidden rounded-lg border border-primary/15 bg-[#070b10]/70 shadow-2xl shadow-primary/5 backdrop-blur-md">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-3">
         <div className="flex gap-1.5">
           <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
           <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
