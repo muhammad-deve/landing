@@ -123,3 +123,72 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ---- Tunnel flow animations ---- */
+
+/* A packet traveling left -> right along a connector. */
+@keyframes packet-flow {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* A packet traveling right -> left (the response path). */
+@keyframes packet-flow-reverse {
+  0% {
+    right: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    right: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-packet {
+  animation: packet-flow 2.4s linear infinite;
+}
+
+.animate-packet-reverse {
+  animation: packet-flow-reverse 2.4s linear infinite;
+}
+
+/* Soft pulsing glow for the cloud / nodes. */
+@keyframes node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 30px -8px var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 48px -4px var(--primary);
+  }
+}
+
+.animate-node-pulse {
+  animation: node-pulse 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-packet,
+  .animate-packet-reverse,
+  .animate-node-pulse {
+    animation: none;
+  }
+}

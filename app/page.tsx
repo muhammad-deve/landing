@@ -1,64 +1,43 @@
-import { EarlyAccessForm } from "@/components/early-access-form";
-import { TerminalPreview } from "@/components/terminal-preview";
+import { SiteNav } from "@/components/site-nav";
+import { Hero } from "@/components/hero";
+import { InstallSection } from "@/components/install-section";
+import { Features } from "@/components/features";
+import { TunnelDiagram } from "@/components/tunnel-diagram";
+import { Faq } from "@/components/faq";
+import { SiteFooter } from "@/components/site-footer";
+import { PageBackground } from "@/components/page-background";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background overflow-hidden">
-      {/* Diagonal dashed lines background */}
-      <div className="pointer-events-none absolute inset-0">
-        <svg
-          className="h-full w-full"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <pattern
-              id="diagonal-lines"
-              patternUnits="userSpaceOnUse"
-              width="60"
-              height="60"
-              patternTransform="rotate(-45)"
-            >
-              <line
-                x1="0"
-                y1="0"
-                x2="60"
-                y2="0"
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeDasharray="8 12"
-                className="text-primary/10"
-              />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#diagonal-lines)" />
-        </svg>
-      </div>
+    <div className="relative flex min-h-screen flex-col">
+      <PageBackground />
+      <SiteNav />
 
-      <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
-        <div className="flex w-full max-w-4xl flex-col items-center gap-12 text-center">
-          {/* Hero */}
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Expose localhost. Instantly.
-            </h1>
-            <p className="max-w-md text-lg text-muted-foreground">
-              Self-hosted tunneling tool for developers
+      <main className="flex-1">
+        <Hero />
+
+        <InstallSection />
+
+        <Features />
+
+        <section id="how-it-works" className="mx-auto w-full max-w-5xl px-6 py-24">
+          <div className="mx-auto mb-14 max-w-2xl text-center">
+            <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
+              How it works
+            </h2>
+            <p className="mt-4 text-pretty text-muted-foreground">
+              One command opens an encrypted path from the public internet straight to your
+              localhost.
             </p>
           </div>
+          <TunnelDiagram />
+        </section>
 
-          {/* Early Access Form */}
-          <div className="flex w-full flex-col items-center gap-3">
-            <p className="text-sm text-muted-foreground">
-              Get notified when we launch
-            </p>
-            <EarlyAccessForm />
-          </div>
-
-          {/* Terminal Preview */}
-          <TerminalPreview />
-        </div>
+        {/* FAQ stays at the very bottom */}
+        <Faq />
       </main>
+
+      <SiteFooter />
     </div>
   );
 }
