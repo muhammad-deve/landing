@@ -31,6 +31,7 @@ export interface ResetPasswordResponse {
 
 interface ApiError {
   error?: string;
+  message?: string;
 }
 
 /** Thrown when the backend reports the email is already registered (HTTP 409). */
@@ -45,6 +46,7 @@ async function parseError(res: Response, fallback: string): Promise<string> {
   try {
     const body = (await res.json()) as ApiError;
     if (body?.error) return body.error;
+    if (body?.message) return body.message;
   } catch {
     // ignore non-JSON bodies
   }
@@ -176,6 +178,45 @@ export interface LoginResponse {
   };
 }
 
+const AUTH_STORAGE_KEY = "goport_auth";
+const GOOGLE_OAUTH_SESSION_KEY = "goport_google_oauth";
+
+interface OAuthProvider {
+  name: string;
+  displayName: string;
+  state: string;
+  authURL?: string;
+  authUrl?: string;
+  codeVerifier: string;
+}
+
+interface AuthMethodsResponse {
+  oauth2?: {
+    enabled: boolean;
+    providers: OAuthProvider[];
+  };
+  authProviders?: OAuthProvider[];
+}
+
+interface GoogleOAuthSession {
+  provider: "google";
+  state: string;
+  codeVerifier: string;
+  redirectURL: string;
+}
+
+export function storeAuthSession(auth: LoginResponse) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(
+    AUTH_STORAGE_KEY,
+    JSON.stringify({
+      token: auth.token,
+      record: auth.record,
+    }),
+  );
+}
+
 /** Authenticate with email + password against the built-in PocketBase users collection. */
 export async function login(
   email: string,
@@ -195,4 +236,107 @@ export async function login(
   }
 
   return (await res.json()) as LoginResponse;
+}
+
+/** Start the PocketBase Google OAuth flow in the current browser window. */
+export async function startGoogleOAuth(): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("Google sign-in is only available in the browser.");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/collections/users/auth-methods`);
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't start Google sign-in."));
+  }
+
+  const methods = (await res.json()) as AuthMethodsResponse;
+  const providers = methods.oauth2?.providers ?? methods.authProviders ?? [];
+  const google = providers.find((provider) => provider.name === "google");
+  const authURL = google?.authURL ?? google?.authUrl;
+
+  if (!methods.oauth2?.enabled || !google || !authURL) {
+    throw new Error("Google sign-in is not configured yet.");
+  }
+
+  const redirectURL = `${window.location.origin}/auth/google/callback`;
+  const session: GoogleOAuthSession = {
+    provider: "google",
+    state: google.state,
+    codeVerifier: google.codeVerifier,
+    redirectURL,
+  };
+
+  window.sessionStorage.setItem(GOOGLE_OAUTH_SESSION_KEY, JSON.stringify(session));
+  window.location.href = withRedirectURL(authURL, redirectURL);
+}
+
+export async function completeGoogleOAuth(
+  code: string | null,
+  state: string | null,
+): Promise<LoginResponse> {
+  if (typeof window === "undefined") {
+    throw new Error("Google sign-in is only available in the browser.");
+  }
+  if (!code) {
+    throw new Error("Google did not return an authorization code.");
+  }
+
+  const session = readGoogleOAuthSession();
+  if (!session) {
+    throw new Error("Google sign-in session expired. Please try again.");
+  }
+  if (state !== session.state) {
+    throw new Error("Google sign-in state mismatch. Please try again.");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/collections/users/auth-with-oauth2`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      provider: session.provider,
+      code,
+      codeVerifier: session.codeVerifier,
+      redirectURL: session.redirectURL,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Google sign-in failed. Please try again."));
+  }
+
+  const auth = (await res.json()) as LoginResponse;
+  storeAuthSession(auth);
+  window.sessionStorage.removeItem(GOOGLE_OAUTH_SESSION_KEY);
+  return auth;
+}
+
+function readGoogleOAuthSession(): GoogleOAuthSession | null {
+  try {
+    const raw = window.sessionStorage.getItem(GOOGLE_OAUTH_SESSION_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<GoogleOAuthSession>;
+    if (
+      parsed.provider !== "google" ||
+      !parsed.state ||
+      !parsed.codeVerifier ||
+      !parsed.redirectURL
+    ) {
+      return null;
+    }
+
+    return parsed as GoogleOAuthSession;
+  } catch {
+    return null;
+  }
+}
+
+function withRedirectURL(authURL: string, redirectURL: string): string {
+  const encodedRedirect = encodeURIComponent(redirectURL);
+  if (authURL.includes("redirect_uri=")) {
+    return `${authURL}${encodedRedirect}`;
+  }
+
+  const separator = authURL.includes("?") ? "&" : "?";
+  return `${authURL}${separator}redirect_uri=${encodedRedirect}`;
 }

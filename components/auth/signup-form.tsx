@@ -18,6 +18,7 @@ import {
   verifyOtp,
   completeRegistration,
   EmailRegisteredError,
+  startGoogleOAuth,
 } from "@/lib/api";
 import { PASSWORD_RULES, isPasswordValid } from "@/lib/password";
 import { cn } from "@/lib/utils";
@@ -121,6 +122,18 @@ export function SignupForm() {
       setError(err instanceof Error ? err.message : "Couldn't resend the code.");
     } finally {
       setResending(false);
+    }
+  };
+
+  const submitGoogle = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await startGoogleOAuth();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't start Google sign-up.");
+      setLoading(false);
     }
   };
 
@@ -375,7 +388,7 @@ export function SignupForm() {
       </Button>
 
       <AuthDivider />
-      <SocialAuth action="Sign up" />
+      <SocialAuth action="Sign up" onGoogle={submitGoogle} disabled={loading} />
     </form>
   );
 }

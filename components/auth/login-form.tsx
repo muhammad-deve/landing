@@ -12,7 +12,13 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { login, forgotPassword, resetPassword } from "@/lib/api";
+import {
+  login,
+  forgotPassword,
+  resetPassword,
+  startGoogleOAuth,
+  storeAuthSession,
+} from "@/lib/api";
 import { PASSWORD_RULES, isPasswordValid } from "@/lib/password";
 import { cn } from "@/lib/utils";
 
@@ -46,12 +52,25 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      const auth = await login(email.trim(), password);
+      storeAuthSession(auth);
       // Auth succeeded; send the user on to the app.
       window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid email or password.");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitGoogle = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await startGoogleOAuth();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't start Google sign-in.");
       setLoading(false);
     }
   };
@@ -430,7 +449,7 @@ export function LoginForm() {
       </Button>
 
       <AuthDivider />
-      <SocialAuth action="Log in" />
+      <SocialAuth action="Log in" onGoogle={submitGoogle} disabled={loading} />
     </form>
   );
 }
