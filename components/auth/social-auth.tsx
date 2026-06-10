@@ -25,7 +25,7 @@ export function SocialAuth({ action, onGoogle }: SocialAuthProps) {
 
 export function AuthDivider() {
   return (
-    <div className="my-6 flex items-center gap-3">
+    <div className="my-4 flex items-center gap-3">
       <span className="h-px flex-1 bg-border/60" />
       <span className="text-xs uppercase tracking-wider text-muted-foreground">or</span>
       <span className="h-px flex-1 bg-border/60" />

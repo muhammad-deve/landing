@@ -12,7 +12,6 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start exposing localhost for free."
       footer={
         <>
           Already have an account?{" "}

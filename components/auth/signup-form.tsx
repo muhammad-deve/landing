@@ -139,10 +139,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={submitDetails} className="flex flex-col gap-5">
-      <SocialAuth action="Sign up" />
-      <AuthDivider />
-
+    <form onSubmit={submitDetails} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Name</Label>
         <Input
@@ -218,6 +215,9 @@ export function SignupForm() {
         {loading && <Loader2 className="size-4 animate-spin" />}
         Next
       </Button>
+
+      <AuthDivider />
+      <SocialAuth action="Sign up" />
     </form>
   );
 }

@@ -99,9 +99,6 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submitLogin} className="flex flex-col gap-5">
-      <SocialAuth action="Log in" />
-      <AuthDivider />
-
       <div className="flex flex-col gap-2">
         <Label htmlFor="login-email">Email</Label>
         <Input
@@ -157,6 +154,9 @@ export function LoginForm() {
         {loading && <Loader2 className="size-4 animate-spin" />}
         Log in
       </Button>
+
+      <AuthDivider />
+      <SocialAuth action="Log in" />
     </form>
   );
 }
