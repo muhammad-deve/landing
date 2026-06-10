@@ -13,6 +13,9 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { SocialAuth, AuthDivider } from "@/components/auth/social-auth";
+import { sendOtp, verifyOtp } from "@/lib/api";
+
+const OTP_LENGTH = 6;
 
 type Step = "details" | "otp" | "done";
 
@@ -24,8 +27,11 @@ export function SignupForm() {
   const [accepted, setAccepted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
+  const [otpId, setOtpId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const detailsValid =
     name.trim().length > 1 &&
@@ -33,28 +39,53 @@ export function SignupForm() {
     password.length >= 8 &&
     accepted;
 
-  const submitDetails = (e: React.FormEvent) => {
+  const submitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!detailsValid) return;
+    if (!detailsValid || loading) return;
     setError(null);
     setLoading(true);
-    // Simulate sending the 5-digit code to the user's email.
-    window.setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await sendOtp(email.trim(), name.trim());
+      setOtpId(res.otpId);
+      setOtp("");
       setStep("otp");
-    }, 800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const submitOtp = (e: React.FormEvent) => {
+  const submitOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.length !== 5) return;
+    if (otp.length !== OTP_LENGTH || loading) return;
     setError(null);
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      // Demo check — accept any 5 digits.
+    try {
+      await verifyOtp(otpId, otp);
       setStep("done");
-    }, 800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid or expired code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (resending || loading) return;
+    setError(null);
+    setNotice(null);
+    setResending(true);
+    try {
+      const res = await sendOtp(email.trim(), name.trim());
+      setOtpId(res.otpId);
+      setOtp("");
+      setNotice("A new code has been sent.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resend the code.");
+    } finally {
+      setResending(false);
+    }
   };
 
   if (step === "otp") {
@@ -62,7 +93,11 @@ export function SignupForm() {
       <form onSubmit={submitOtp} className="flex flex-col gap-6">
         <button
           type="button"
-          onClick={() => setStep("details")}
+          onClick={() => {
+            setError(null);
+            setNotice(null);
+            setStep("details");
+          }}
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -74,7 +109,7 @@ export function SignupForm() {
             <MailCheck className="size-5" />
           </div>
           <p className="text-sm text-muted-foreground">
-            We sent a 5-digit code to
+            We sent a {OTP_LENGTH}-digit code to
             <br />
             <span className="font-medium text-foreground">{email}</span>
           </p>
@@ -82,13 +117,13 @@ export function SignupForm() {
 
         <div className="flex flex-col items-center gap-3">
           <InputOTP
-            maxLength={5}
+            maxLength={OTP_LENGTH}
             value={otp}
             onChange={setOtp}
             containerClassName="justify-center"
           >
             <InputOTPGroup className="gap-2">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {Array.from({ length: OTP_LENGTH }, (_, i) => (
                 <InputOTPSlot
                   key={i}
                   index={i}
@@ -99,16 +134,20 @@ export function SignupForm() {
           </InputOTP>
           <button
             type="button"
-            className="text-xs text-muted-foreground transition-colors hover:text-primary"
-            onClick={() => setOtp("")}
+            className="text-xs text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            onClick={resendCode}
+            disabled={resending}
           >
-            Didn&apos;t get a code? Resend
+            {resending ? "Resending…" : "Didn't get a code? Resend"}
           </button>
         </div>
 
+        {notice && <p className="text-center text-sm text-primary">{notice}</p>}
+        {error && <p className="text-center text-sm text-destructive">{error}</p>}
+
         <Button
           type="submit"
-          disabled={otp.length !== 5 || loading}
+          disabled={otp.length !== OTP_LENGTH || loading}
           className="h-11 w-full bg-primary font-medium text-primary-foreground hover:bg-primary/90"
         >
           {loading && <Loader2 className="size-4 animate-spin" />}
