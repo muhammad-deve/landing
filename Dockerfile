@@ -13,6 +13,11 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time,
+# so the backend URL must be provided here (not at runtime).
+ARG NEXT_PUBLIC_API_BASE_URL=https://back.goport.uz
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+
 RUN pnpm run build
 
 # Stage 2: Production runner
