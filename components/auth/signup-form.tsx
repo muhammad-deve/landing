@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2, ArrowLeft, MailCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowLeft, MailCheck, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,31 +13,43 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { SocialAuth, AuthDivider } from "@/components/auth/social-auth";
-import { sendOtp, verifyOtp } from "@/lib/api";
+import {
+  sendOtp,
+  verifyOtp,
+  completeRegistration,
+  EmailRegisteredError,
+} from "@/lib/api";
+import { PASSWORD_RULES, isPasswordValid } from "@/lib/password";
+import { cn } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 
-type Step = "details" | "otp" | "done";
+type Step = "details" | "otp" | "password" | "done";
 
 export function SignupForm() {
   const [step, setStep] = useState<Step>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
   const [otp, setOtp] = useState("");
   const [otpId, setOtpId] = useState("");
+
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const detailsValid =
-    name.trim().length > 1 &&
-    /\S+@\S+\.\S+/.test(email) &&
-    password.length >= 8 &&
-    accepted;
+    name.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && accepted;
+
+  const passwordValid = isPasswordValid(password);
+  const confirmValid = confirm.length > 0 && password === confirm;
+  const canSubmitPassword = passwordValid && confirmValid;
 
   const submitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +62,13 @@ export function SignupForm() {
       setOtp("");
       setStep("otp");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err instanceof EmailRegisteredError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong.",
+      );
     } finally {
       setLoading(false);
     }
@@ -63,9 +81,27 @@ export function SignupForm() {
     setLoading(true);
     try {
       await verifyOtp(otpId, otp);
-      setStep("done");
+      // Code is valid; move on to set the password.
+      setStep("password");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid or expired code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmitPassword || loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await completeRegistration(otpId, otp, password);
+      setStep("done");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn't create your account.",
+      );
     } finally {
       setLoading(false);
     }
@@ -88,6 +124,7 @@ export function SignupForm() {
     }
   };
 
+  // --- Step: OTP ---
   if (step === "otp") {
     return (
       <form onSubmit={submitOtp} className="flex flex-col gap-6">
@@ -151,12 +188,117 @@ export function SignupForm() {
           className="h-11 w-full bg-primary font-medium text-primary-foreground hover:bg-primary/90"
         >
           {loading && <Loader2 className="size-4 animate-spin" />}
-          Verify &amp; create account
+          Verify code
         </Button>
       </form>
     );
   }
 
+  // --- Step: Set password ---
+  if (step === "password") {
+    return (
+      <form onSubmit={submitPassword} className="flex flex-col gap-5">
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setStep("otp");
+          }}
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </button>
+
+        <div className="flex flex-col gap-1 text-center">
+          <h2 className="text-lg font-semibold text-foreground">Set your password</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose a password to finish creating your account.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              className="h-11 bg-background/60 pr-10"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirm">Confirm password</Label>
+          <Input
+            id="confirm"
+            type={showPassword ? "text" : "password"}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter your password"
+            autoComplete="new-password"
+            className="h-11 bg-background/60"
+            required
+          />
+          {confirm.length > 0 && !confirmValid && (
+            <p className="text-xs text-destructive">Passwords don&apos;t match</p>
+          )}
+        </div>
+
+        {/* Live password requirement checker */}
+        <ul className="flex flex-col gap-1.5 rounded-md border border-border/60 bg-background/40 p-3">
+          {PASSWORD_RULES.map((rule) => {
+            const ok = rule.test(password);
+            return (
+              <li
+                key={rule.id}
+                className={cn(
+                  "flex items-center gap-2 text-xs transition-colors",
+                  ok ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-4 shrink-0 items-center justify-center rounded-full",
+                    ok ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {ok ? <Check className="size-3" /> : <X className="size-3" />}
+                </span>
+                {rule.label}
+              </li>
+            );
+          })}
+        </ul>
+
+        {error && <p className="text-center text-sm text-destructive">{error}</p>}
+
+        <Button
+          type="submit"
+          disabled={!canSubmitPassword || loading}
+          className="h-11 w-full bg-primary font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          {loading && <Loader2 className="size-4 animate-spin" />}
+          Create account
+        </Button>
+      </form>
+    );
+  }
+
+  // --- Step: Done ---
   if (step === "done") {
     return (
       <div className="flex flex-col items-center gap-4 py-4 text-center">
@@ -171,12 +313,13 @@ export function SignupForm() {
           asChild
           className="mt-2 h-11 w-full bg-primary font-medium text-primary-foreground hover:bg-primary/90"
         >
-          <Link href="/">Go to dashboard</Link>
+          <Link href="/login">Continue to log in</Link>
         </Button>
       </div>
     );
   }
 
+  // --- Step: Details (name + email) ---
   return (
     <form onSubmit={submitDetails} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -204,30 +347,6 @@ export function SignupForm() {
           className="h-11 bg-background/60"
           required
         />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Password</Label>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
-            autoComplete="new-password"
-            className="h-11 bg-background/60 pr-10"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((s) => !s)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
-        </div>
       </div>
 
       <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted-foreground">
