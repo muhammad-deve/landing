@@ -54,8 +54,8 @@ export function LoginForm() {
     try {
       const auth = await login(email.trim(), password);
       storeAuthSession(auth);
-      // Auth succeeded; send the user on to the app.
-      window.location.href = "/";
+      // Auth succeeded; send the user to their dashboard.
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid email or password.");
     } finally {

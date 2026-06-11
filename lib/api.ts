@@ -217,6 +217,69 @@ export function storeAuthSession(auth: LoginResponse) {
   );
 }
 
+/** Read the persisted auth session, or null when signed out. */
+export function readAuthSession(): LoginResponse | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<LoginResponse>;
+    if (!parsed.token || !parsed.record) return null;
+    return parsed as LoginResponse;
+  } catch {
+    return null;
+  }
+}
+
+/** Clear the persisted auth session (log out). */
+export function clearAuthSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+export interface DashboardDomain {
+  subdomain: string;
+  url: string;
+  isCustom: boolean;
+  requests: number;
+  bytes: number;
+  lastActive?: string;
+  created?: string;
+}
+
+export interface DashboardData {
+  token: string;
+  name: string;
+  email: string;
+  totalRequests: number;
+  totalBytes: number;
+  domains: DashboardDomain[];
+}
+
+/** Thrown when the dashboard request is rejected for an expired/invalid session. */
+export class UnauthorizedError extends Error {
+  constructor(message = "Your session has expired. Please log in again.") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+/** Fetch the authenticated user's dashboard (token, stats, domains). */
+export async function getDashboard(token: string): Promise<DashboardData> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/dashboard`, {
+    headers: { Authorization: token },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new UnauthorizedError();
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't load your dashboard. Please try again."));
+  }
+
+  return (await res.json()) as DashboardData;
+}
+
 /** Authenticate with email + password against the built-in PocketBase users collection. */
 export async function login(
   email: string,

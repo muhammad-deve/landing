@@ -27,7 +27,7 @@ export function GoogleCallbackClient() {
 
     completeGoogleOAuth(searchParams.get("code"), searchParams.get("state"))
       .then(() => {
-        if (active) router.replace("/");
+        if (active) router.replace("/dashboard");
       })
       .catch((err) => {
         if (!active) return;

@@ -17,6 +17,8 @@ import {
   sendOtp,
   verifyOtp,
   completeRegistration,
+  login,
+  storeAuthSession,
   EmailRegisteredError,
   startGoogleOAuth,
 } from "@/lib/api";
@@ -98,6 +100,16 @@ export function SignupForm() {
     setLoading(true);
     try {
       await completeRegistration(otpId, otp, password);
+      // Sign the new account in straight away so we can drop them on the
+      // dashboard instead of bouncing back to the login screen.
+      try {
+        const auth = await login(email.trim(), password);
+        storeAuthSession(auth);
+        window.location.href = "/dashboard";
+        return;
+      } catch {
+        // Auto-login failed for some reason; fall back to the success screen.
+      }
       setStep("done");
     } catch (err) {
       setError(
