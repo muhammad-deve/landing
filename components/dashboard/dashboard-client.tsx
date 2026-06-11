@@ -11,20 +11,25 @@ import {
   EyeOff,
   Globe,
   HardDrive,
+  Key,
   Loader2,
   LogOut,
+  Plus,
   RefreshCw,
   Sparkles,
-  Terminal,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { GoPortLogo } from "@/components/goport-logo";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import {
   type DashboardData,
   type DashboardDomain,
+  type TokenItem,
   clearAuthSession,
+  createToken,
+  deleteToken,
   getDashboard,
   readAuthSession,
   UnauthorizedError,
@@ -32,9 +37,15 @@ import {
 
 export function DashboardClient() {
   const router = useRouter();
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleAuthError = useCallback(() => {
+    clearAuthSession();
+    router.replace("/login");
+  }, [router]);
 
   const load = useCallback(async () => {
     const session = readAuthSession();
@@ -42,6 +53,7 @@ export function DashboardClient() {
       router.replace("/login");
       return;
     }
+    setAuthToken(session.token);
 
     setError(null);
     try {
@@ -49,15 +61,14 @@ export function DashboardClient() {
       setData(dashboard);
     } catch (err) {
       if (err instanceof UnauthorizedError) {
-        clearAuthSession();
-        router.replace("/login");
+        handleAuthError();
         return;
       }
       setError(err instanceof Error ? err.message : "Couldn't load your dashboard.");
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, handleAuthError]);
 
   useEffect(() => {
     void load();
@@ -101,11 +112,14 @@ export function DashboardClient() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 pb-24 pt-28">
-      <Header name={firstName} email={data.email} onLogout={logout} />
+      <Header
+        name={firstName}
+        fullName={data.name}
+        email={data.email}
+        onLogout={logout}
+      />
 
       <div className="mt-10 flex flex-col gap-6">
-        <TokenCard token={data.token} />
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             icon={Activity}
@@ -127,6 +141,13 @@ export function DashboardClient() {
           />
         </div>
 
+        <TokensSection
+          authToken={authToken}
+          tokens={data.tokens}
+          onChange={() => void load()}
+          onAuthError={handleAuthError}
+        />
+
         <DomainsCard domains={data.domains} onRefresh={() => void load()} />
       </div>
     </div>
@@ -135,10 +156,12 @@ export function DashboardClient() {
 
 function Header({
   name,
+  fullName,
   email,
   onLogout,
 }: {
   name: string;
+  fullName: string;
   email: string;
   onLogout: () => void;
 }) {
@@ -150,7 +173,7 @@ function Header({
         </Link>
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-medium text-foreground">{name}</p>
+            <p className="text-sm font-medium text-foreground">{fullName || name}</p>
             <p className="text-xs text-muted-foreground">{email}</p>
           </div>
           <Button
@@ -169,70 +192,9 @@ function Header({
           Welcome back, {name}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your token, traffic, and tunnels — all in one place.
+          Your tokens, traffic, and tunnels — all in one place.
         </p>
       </div>
-    </div>
-  );
-}
-
-function TokenCard({ token }: { token: string }) {
-  const [revealed, setRevealed] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const command = `goport auth ${token}`;
-  const display = revealed ? command : `goport auth ${maskToken(token)}`;
-
-  const copy = async () => {
-    if (await copyText(command)) {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-border/70 bg-card/40 p-6 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <Terminal className="size-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">Your CLI token</h2>
-      </div>
-      <p className="mt-1.5 text-sm text-muted-foreground">
-        Run this once to link the GoPort CLI to your account. Keep it secret.
-      </p>
-
-      <div className="group mt-4 flex items-center gap-3 rounded-lg border border-border/70 bg-[#0a0a0a]/90 px-4 py-3.5 font-mono text-sm shadow-inner transition-colors hover:border-primary/40">
-        <span className="select-none text-primary/90">$</span>
-        <code className="flex-1 truncate text-left text-foreground/90">
-          <span className="text-primary">goport</span>{" "}
-          <span className="text-sky-400">auth</span>{" "}
-          <span className="text-fuchsia-400">
-            {revealed ? token : maskToken(token)}
-          </span>
-        </code>
-        <button
-          type="button"
-          onClick={() => setRevealed((r) => !r)}
-          aria-label={revealed ? "Hide token" : "Reveal token"}
-          title={revealed ? "Hide token" : "Reveal token"}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-        >
-          {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        </button>
-        <button
-          type="button"
-          onClick={copy}
-          aria-label="Copy command"
-          title={copied ? "Copied!" : "Copy command"}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-        >
-          {copied ? (
-            <Check className="size-4 text-primary" />
-          ) : (
-            <Copy className="size-4" />
-          )}
-        </button>
-      </div>
-      <span className="sr-only">{display}</span>
     </div>
   );
 }
@@ -256,6 +218,192 @@ function StatCard({
       </div>
       <p className="mt-3 font-mono text-2xl font-semibold text-foreground">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function TokensSection({
+  authToken,
+  tokens,
+  onChange,
+  onAuthError,
+}: {
+  authToken: string | null;
+  tokens: TokenItem[];
+  onChange: () => void;
+  onAuthError: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authToken || creating) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    setError(null);
+    setCreating(true);
+    try {
+      await createToken(authToken, trimmed);
+      setName("");
+      onChange();
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        onAuthError();
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Couldn't create the token.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-card/40 p-6 backdrop-blur">
+      <div className="flex items-center gap-2">
+        <Key className="size-4 text-primary" />
+        <h2 className="text-sm font-semibold text-foreground">CLI tokens</h2>
+      </div>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        Run{" "}
+        <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-foreground">
+          goport auth &lt;token&gt;
+        </code>{" "}
+        to link a machine to your account. Keep tokens secret.
+      </p>
+
+      <form onSubmit={create} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="New token name (e.g. laptop, ci)"
+          maxLength={50}
+          className="h-10 bg-background/60"
+        />
+        <Button
+          type="submit"
+          disabled={creating || name.trim().length === 0}
+          className="h-10 shrink-0 bg-primary font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+          Create token
+        </Button>
+      </form>
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+      <div className="mt-5 flex flex-col gap-3">
+        {tokens.map((token) => (
+          <TokenRow
+            key={token.id}
+            authToken={authToken}
+            token={token}
+            canDelete={tokens.length > 1}
+            onChange={onChange}
+            onAuthError={onAuthError}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TokenRow({
+  authToken,
+  token,
+  canDelete,
+  onChange,
+  onAuthError,
+}: {
+  authToken: string | null;
+  token: TokenItem;
+  canDelete: boolean;
+  onChange: () => void;
+  onAuthError: () => void;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const command = `goport auth ${token.token}`;
+
+  const copy = async () => {
+    if (await copyText(command)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    }
+  };
+
+  const remove = async () => {
+    if (!authToken || deleting) return;
+    if (!window.confirm(`Delete the "${token.name}" token? Any machine using it will stop working.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteToken(authToken, token.id);
+      onChange();
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        onAuthError();
+        return;
+      }
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-[#0a0a0a]/70 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-sm font-medium text-foreground">{token.name}</span>
+          {token.name === "default" && (
+            <span className="rounded-full border border-border/60 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              default
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={remove}
+          disabled={!canDelete || deleting}
+          aria-label="Delete token"
+          title={canDelete ? "Delete token" : "Keep at least one token"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+        </button>
+      </div>
+
+      <div className="group mt-3 flex items-center gap-2 rounded-md border border-border/60 bg-background/40 px-3 py-2 font-mono text-xs">
+        <span className="select-none text-primary/90">$</span>
+        <code className="flex-1 truncate text-left text-foreground/90">
+          <span className="text-primary">goport</span>{" "}
+          <span className="text-sky-400">auth</span>{" "}
+          <span className="text-fuchsia-400">
+            {revealed ? token.token : maskToken(token.token)}
+          </span>
+        </code>
+        <button
+          type="button"
+          onClick={() => setRevealed((r) => !r)}
+          aria-label={revealed ? "Hide token" : "Reveal token"}
+          title={revealed ? "Hide token" : "Reveal token"}
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+        >
+          {revealed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={copy}
+          aria-label="Copy command"
+          title={copied ? "Copied!" : "Copy command"}
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+        >
+          {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
+        </button>
+      </div>
     </div>
   );
 }
@@ -355,7 +503,7 @@ function EmptyDomains() {
       </div>
       <p className="text-sm font-medium text-foreground">No tunnels yet</p>
       <p className="max-w-sm text-xs text-muted-foreground">
-        Authenticate the CLI with the token above, then run{" "}
+        Authenticate the CLI with one of your tokens above, then run{" "}
         <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-foreground">
           goport http 3000
         </code>{" "}

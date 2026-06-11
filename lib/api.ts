@@ -247,13 +247,21 @@ export interface DashboardDomain {
   created?: string;
 }
 
-export interface DashboardData {
+export interface TokenItem {
+  id: string;
+  name: string;
   token: string;
+  created?: string;
+}
+
+export interface DashboardData {
   name: string;
   email: string;
+  avatar: string;
   totalRequests: number;
   totalBytes: number;
   domains: DashboardDomain[];
+  tokens: TokenItem[];
 }
 
 /** Thrown when the dashboard request is rejected for an expired/invalid session. */
@@ -264,7 +272,7 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** Fetch the authenticated user's dashboard (token, stats, domains). */
+/** Fetch the authenticated user's dashboard (profile, tokens, stats, domains). */
 export async function getDashboard(token: string): Promise<DashboardData> {
   const res = await fetch(`${API_BASE_URL}/api/v1/dashboard`, {
     headers: { Authorization: token },
@@ -278,6 +286,42 @@ export async function getDashboard(token: string): Promise<DashboardData> {
   }
 
   return (await res.json()) as DashboardData;
+}
+
+/** Create a new named CLI token. The backend generates the token value. */
+export async function createToken(authToken: string, name: string): Promise<TokenItem> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authToken },
+    body: JSON.stringify({ name }),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new UnauthorizedError();
+  }
+  if (res.status === 409) {
+    throw new Error(await parseError(res, "You already have a token with this name."));
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't create the token. Please try again."));
+  }
+
+  return (await res.json()) as TokenItem;
+}
+
+/** Delete one of the user's CLI tokens by id. */
+export async function deleteToken(authToken: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/tokens/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: authToken },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new UnauthorizedError();
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't delete the token. Please try again."));
+  }
 }
 
 /** Authenticate with email + password against the built-in PocketBase users collection. */
