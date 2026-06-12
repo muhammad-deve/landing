@@ -14,14 +14,14 @@ type Platform = {
 };
 
 const PLATFORMS: Platform[] = [
-  { id: "macos", label: "macOS", icon: AppleIcon, prompt: "$", command: "brew install goport" },
-  { id: "windows", label: "Windows", icon: WindowsIcon, prompt: ">", command: "choco install goport" },
+  { id: "macos", label: "macOS", icon: AppleIcon, prompt: "$", command: "brew tap muhammad-deve/goport && brew install goport" },
+  { id: "windows", label: "Windows", icon: WindowsIcon, prompt: ">", command: "scoop bucket add goport https://github.com/muhammad-deve/homebrew-goport && scoop install goport" },
   {
     id: "linux",
     label: "Linux",
     icon: LinuxIcon,
     prompt: "$",
-    command: "curl -fsSL https://goport.uz/install.sh | sh",
+    command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport",
   },
   { id: "docker", label: "Docker", icon: DockerIcon, prompt: "$", command: "docker run goport/goport" },
   {
@@ -29,7 +29,7 @@ const PLATFORMS: Platform[] = [
     label: "Ask an AI assistant",
     icon: Sparkles,
     prompt: "✦",
-    command: "Install GoPort and help me get authenticated so I can get my service online.",
+    command: "How to install goport cli from goport.uz (https://github.com/muhammad-deve/GoPort) and help me get authenticated so I can get my service online.",
   },
 ];
 
@@ -146,8 +146,8 @@ function renderCommand(command: string) {
   return parts.map((word, i) => {
     let className = "text-foreground/90";
     if (i === 0) className = "text-primary";
-    else if (["install", "run", "tap"].includes(word)) className = "text-sky-400";
-    else if (word === "goport") className = "text-fuchsia-400";
+    else if (["install", "run", "tap", "bucket", "add"].includes(word)) className = "text-sky-400";
+    else if (["goport", "goport/goport"].includes(word)) className = "text-fuchsia-400";
     return (
       <span key={`${word}-${i}`} className={className}>
         {word}
