@@ -16,7 +16,6 @@ import {
   LogOut,
   Plus,
   RefreshCw,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -148,7 +147,7 @@ export function DashboardClient() {
           onAuthError={handleAuthError}
         />
 
-        <DomainsCard domains={data.domains} onRefresh={() => void load()} />
+        <DomainsCard domains={data.domains} onRefresh={load} />
       </div>
     </div>
   );
@@ -413,30 +412,54 @@ function DomainsCard({
   onRefresh,
 }: {
   domains: DashboardDomain[];
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        Promise.resolve(onRefresh()),
+        new Promise((resolve) => window.setTimeout(resolve, 650)),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <div className="rounded-xl border border-border/70 bg-card/40 p-6 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Globe className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Your domains</h2>
+    <div className="overflow-hidden rounded-lg border border-border/70 bg-card/45 backdrop-blur">
+      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background/45 text-primary">
+            <Globe className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">Your domains</h2>
+            <p className="text-xs text-muted-foreground">
+              {domains.length === 1 ? "1 endpoint" : `${domains.length} endpoints`}
+            </p>
+          </div>
         </div>
         <button
           type="button"
-          onClick={onRefresh}
-          aria-label="Refresh"
-          title="Refresh"
-          className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label={refreshing ? "Refreshing domains" : "Refresh domains"}
+          title={refreshing ? "Refreshing" : "Refresh"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground disabled:cursor-wait"
         >
-          <RefreshCw className="size-4" />
+          <RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} />
         </button>
       </div>
 
       {domains.length === 0 ? (
         <EmptyDomains />
       ) : (
-        <div className="mt-5 flex flex-col divide-y divide-border/50">
+        <div className="flex flex-col divide-y divide-border/50">
           {domains.map((domain) => (
             <DomainRow key={domain.subdomain} domain={domain} />
           ))}
@@ -448,37 +471,31 @@ function DomainsCard({
 
 function DomainRow({ domain }: { domain: DashboardDomain }) {
   return (
-    <div className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-1">
-        <a
-          href={domain.url}
-          target="_blank"
-          rel="noreferrer"
-          className="group inline-flex w-fit items-center gap-1.5 font-mono text-sm text-foreground transition-colors hover:text-primary"
-        >
-          <span className="truncate">{domain.url.replace(/^https?:\/\//, "")}</span>
-          <ArrowUpRight className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-        </a>
-        <div className="flex items-center gap-2">
-          {domain.isCustom ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-              <Sparkles className="size-2.5" />
-              Custom
-            </span>
-          ) : (
-            <span className="rounded-full border border-border/60 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Random
-            </span>
-          )}
+    <div className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35">
+            <Globe className="size-4 text-muted-foreground" />
+          </span>
+          <a
+            href={domain.url}
+            target="_blank"
+            rel="noreferrer"
+            className="group inline-flex min-w-0 items-center gap-1.5 font-mono text-sm font-medium text-foreground transition-colors hover:text-primary"
+          >
+            <span className="truncate">{domain.url.replace(/^https?:\/\//, "")}</span>
+            <ArrowUpRight className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          </a>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:pl-11">
+          <DomainStatus custom={domain.isCustom} />
           {domain.lastActive && (
-            <span className="text-xs text-muted-foreground">
-              Active {formatRelative(domain.lastActive)}
-            </span>
+            <span>Active {formatRelative(domain.lastActive)}</span>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-6 sm:gap-8">
+      <div className="grid grid-cols-2 gap-5 border-t border-border/50 pt-3 sm:min-w-48 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
         <Metric label="Requests" value={formatNumber(domain.requests)} />
         <Metric label="Data" value={formatBytes(domain.bytes)} />
       </div>
@@ -486,9 +503,24 @@ function DomainRow({ domain }: { domain: DashboardDomain }) {
   );
 }
 
+function DomainStatus({ custom }: { custom: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className={
+          custom
+            ? "size-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]"
+            : "size-1.5 rounded-full bg-muted-foreground/60"
+        }
+      />
+      <span>{custom ? "Custom domain" : "Generated domain"}</span>
+    </span>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="text-right">
+    <div className="text-left sm:text-right">
       <p className="font-mono text-sm font-medium text-foreground">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
     </div>
