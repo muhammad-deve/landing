@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Copy, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AppleIcon, WindowsIcon, LinuxIcon, DockerIcon } from "@/components/icons";
+import { AppleIcon, WindowsIcon, LinuxIcon } from "@/components/icons";
 
 type Platform = {
   id: string;
@@ -23,7 +23,6 @@ const PLATFORMS: Platform[] = [
     prompt: "$",
     command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport",
   },
-  { id: "docker", label: "Docker", icon: DockerIcon, prompt: "$", command: "docker run goport/goport" },
   {
     id: "ai",
     label: "Ask an AI assistant",
