@@ -15,7 +15,7 @@ type Platform = {
 
 const PLATFORMS: Platform[] = [
   { id: "macos", label: "macOS", icon: AppleIcon, prompt: "$", command: "brew tap muhammad-deve/goport && brew install goport" },
-  { id: "windows", label: "Windows", icon: WindowsIcon, prompt: ">", command: "scoop bucket add goport https://github.com/muhammad-deve/homebrew-goport && scoop install goport" },
+  { id: "windows", label: "Windows", icon: WindowsIcon, prompt: ">", command: "scoop bucket add goport https://github.com/muhammad-deve/scoop-goport && scoop install goport" },
   {
     id: "linux",
     label: "Linux",
