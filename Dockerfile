@@ -1,15 +1,20 @@
+# syntax=docker/dockerfile:1
+
 # Stage 1: Install dependencies and build the application
 FROM node:22-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache libc6-compat python3 make g++ \
+RUN apk add --no-cache libc6-compat \
     && corepack enable \
     && corepack prepare pnpm@10.15.1 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+
+# Cache the pnpm store across builds so deps aren't re-downloaded every time.
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -18,7 +23,9 @@ COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL=https://back.goport.uz
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
-RUN pnpm run build
+# Cache the Next.js build cache across builds for faster rebuilds.
+RUN --mount=type=cache,target=/app/.next/cache \
+    pnpm run build
 
 # Stage 2: Production runner
 FROM node:22-alpine AS runner
