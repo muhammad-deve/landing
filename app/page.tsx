@@ -8,10 +8,12 @@ import { SiteFooter } from "@/components/site-footer";
 import { PageBackground } from "@/components/page-background";
 import { SectionHeader } from "@/components/section-header";
 import { SectionDivider } from "@/components/section-divider";
+import { AuthRedirect } from "@/components/auth-redirect";
 
 export default function Home() {
   return (
     <div className="relative z-0 flex min-h-screen flex-col">
+      <AuthRedirect />
       <PageBackground />
       <SiteNav />
 
