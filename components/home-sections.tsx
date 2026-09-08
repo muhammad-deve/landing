@@ -51,8 +51,8 @@ const FEATURES = [
 
 const PLANS = [
   { name: "Free", price: "$0", description: "For trying a route with a local project.", items: ["Up to 2 active tunnels", "Random GoPort subdomain", "Automatic HTTPS", "WebSocket support", "Basic request inspector", "Community support"], action: "Start free" },
-  { name: "Pro", price: "$2.99", suffix: "/ month", description: "For projects that need names and history to persist.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Get Pro", popular: true },
-  { name: "Team", price: "$7.99", suffix: "/ month", description: "For developers sharing routes and domains.", items: ["Everything in Pro", "Shared tunnels and domains", "Team member access", "Central route ownership", "Higher team limits", "Priority support"], action: "Get Team" },
+  { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Full Pro access with flexible monthly billing.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose monthly" },
+  { name: "Pro yearly", price: "$29.99", suffix: "/ year", description: "The same Pro features with two months of savings.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose yearly", popular: true, badge: "Best value" },
 ];
 
 export function CompatibleServices() {
@@ -180,11 +180,11 @@ export function DeveloperSignals() {
 export function Pricing() {
   return (
     <section id="pricing" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <SectionHeader eyebrow="Pricing" title="Start with a route. Grow when routes become infrastructure." description="Three straightforward plans. No enterprise maze." />
+      <SectionHeader eyebrow="Pricing" title="Free to start. Pro when you need more." description="Choose Free, or get every Pro feature with monthly or yearly billing." />
       <div className="mt-14 grid gap-4 lg:grid-cols-3">
         {PLANS.map((plan) => (
           <article key={plan.name} className={`relative rounded-2xl border p-7 ${plan.popular ? "border-primary bg-primary/[0.07]" : "border-border bg-card/60"}`}>
-            {plan.popular && <span className="absolute right-6 top-6 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">Most popular</span>}
+            {plan.popular && <span className="absolute right-6 top-6 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{plan.badge}</span>}
             <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
             <p className="mt-3 max-w-[16rem] text-sm leading-6 text-muted-foreground">{plan.description}</p>
             <div className="mt-8 flex items-end gap-1"><span className="text-5xl font-semibold tracking-[-0.05em] text-foreground">{plan.price}</span>{plan.suffix && <span className="mb-1 text-sm text-muted-foreground">{plan.suffix}</span>}</div>

@@ -295,7 +295,7 @@ Do not invent usage numbers.
 
 Put pricing directly on the homepage.
 
-Use only 3 plans.
+Use three clear payment choices: Free, Pro monthly, and Pro yearly.
 
 ## Free
 
@@ -317,13 +317,9 @@ Button:
 
 ---
 
-## Pro
+## Pro monthly
 
 **$2.99 / month**
-
-Mark this plan:
-
-**Most Popular**
 
 Possible features:
 
@@ -337,26 +333,31 @@ Possible features:
 
 Button:
 
-**Get Pro**
+**Choose monthly**
 
 ---
 
-## Team
+## Pro yearly
 
-**$7.99 / month**
+**$29.99 / year**
+
+Mark this plan:
+
+**Best Value**
 
 Possible features:
 
-- Everything in Pro
-- Shared tunnels
-- Shared domains
-- Team members
-- Higher limits
-- Priority support
+- More simultaneous tunnels
+- Persistent subdomains
+- Custom domains
+- Higher traffic limits
+- Full request history
+- Protected tunnels
+- Better limits
 
 Button:
 
-**Get Team**
+**Choose yearly**
 
 Do not add Enterprise yet.
 
@@ -575,10 +576,9 @@ That is enough.
 The pricing page can contain:
 
 - Free
-- Pro
-- Team
+- Pro monthly
+- Pro yearly
 - Simple feature comparison
-- Monthly / yearly toggle later
 - FAQ at the bottom
 
 Do not make the pricing page complicated.
