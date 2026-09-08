@@ -20,14 +20,26 @@ import { UseCaseWorkbench } from "@/components/use-case-workbench";
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 const INTEGRATIONS = [
-  { name: "Click", mark: "C" },
-  { name: "payme", mark: "p" },
-  { name: "MultiCard", mark: "M" },
-  { name: "Higgsfield", mark: "H" },
-  { name: "Telegram", mark: "T" },
-  { name: "GitHub", mark: "G" },
-  { name: "Stripe", mark: "S" },
-  { name: "Twilio", mark: "T" },
+  {
+    name: "Click",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6a/8e/e5/6a8ee507-4aee-5c09-d357-6111d7f8c7ea/AppIcon-0-0-1x_U007epad-0-11-0-sRGB-85-220.png/256x256bb.png",
+    appIcon: true,
+  },
+  {
+    name: "payme",
+    icon: "https://cdn.payme.uz/payme-logos/ico/p/1/apple-touch-icon.png",
+    appIcon: true,
+  },
+  {
+    name: "MultiCard",
+    icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/c7/b1/47/c7b14703-7e64-60e3-2ad9-a098cfc777f9/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/256x256bb.png",
+    appIcon: true,
+  },
+  { name: "Higgsfield", icon: "https://higgsfield.ai/icon.png", appIcon: true },
+  { name: "Telegram", icon: "https://cdn.simpleicons.org/telegram/26A5E4" },
+  { name: "GitHub", icon: "https://cdn.simpleicons.org/github/181717" },
+  { name: "Stripe", icon: "https://cdn.simpleicons.org/stripe/635BFF" },
+  { name: "Twilio", icon: "https://www.twilio.com/favicon.ico" },
 ];
 
 const FEATURES = [
@@ -52,7 +64,21 @@ export function CompatibleServices() {
         <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4 lg:grid-cols-8">
           {INTEGRATIONS.map((integration) => (
             <div key={integration.name} className="flex min-h-28 flex-col items-center justify-center gap-3 border-b border-r border-border px-3 last:border-r-0 sm:[&:nth-child(n+5)]:border-b-0 lg:border-b-0">
-              <span className="flex size-9 items-center justify-center rounded-xl border border-border bg-background font-semibold text-primary shadow-sm" aria-hidden>{integration.mark}</span>
+              <span
+                className={`flex size-11 items-center justify-center overflow-hidden border border-border bg-white shadow-sm ${integration.appIcon ? "rounded-[0.9rem]" : "rounded-xl p-2.5"}`}
+                aria-hidden
+              >
+                {/* Native img keeps third-party SVG and app-icon assets unoptimized and crisp. */}
+                <img
+                  src={integration.icon}
+                  alt=""
+                  width={44}
+                  height={44}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className="size-full object-contain"
+                />
+              </span>
               <span className="text-sm font-semibold tracking-[-0.02em] text-foreground">{integration.name}</span>
             </div>
           ))}
