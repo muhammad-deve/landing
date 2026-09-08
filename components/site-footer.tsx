@@ -65,7 +65,7 @@ export function SiteFooter() {
         ))}
       </div>
 
-      <div className="border-t border-border/40 py-5 text-center font-mono text-xs text-muted-foreground/60">
+      <div className="py-5 text-center font-mono text-xs text-muted-foreground/60">
         © {new Date().getFullYear()} GoPort. {" "}
         <a href={LICENSE_URL} target="_blank" rel="noreferrer noopener" className="underline-offset-2 transition-colors hover:text-primary hover:underline">MIT Licensed</a>.
       </div>

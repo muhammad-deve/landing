@@ -339,11 +339,11 @@ Button:
 
 ## Pro yearly
 
-**$29.99 / year**
+**$19.99 / year**
 
 Show the savings clearly:
 
-**Save $5.89 · $2.50/month effective**
+**Save 44% with yearly billing**
 
 Mark this plan:
 

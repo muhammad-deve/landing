@@ -1,6 +1,6 @@
 import { AuthRedirect } from "@/components/auth-redirect";
 import { Faq } from "@/components/faq";
-import { CompatibleServices, DeveloperSignals, DocsOverview, FinalCta, MainFeatures, Pricing, Quickstart, TrustSignals, UseCases } from "@/components/home-sections";
+import { CompatibleServices, DocsOverview, Pricing, Quickstart, UseCases } from "@/components/home-sections";
 import { Hero } from "@/components/hero";
 import { PageBackground } from "@/components/page-background";
 import { SiteFooter } from "@/components/site-footer";
@@ -16,14 +16,10 @@ export default function Home() {
       <main className="relative z-10 flex-1">
         <Hero />
         <CompatibleServices />
-        <MainFeatures />
         <UseCases />
         <Quickstart />
         <DocsOverview />
-        <DeveloperSignals />
         <Pricing />
-        <TrustSignals />
-        <FinalCta />
         <Faq />
       </main>
 

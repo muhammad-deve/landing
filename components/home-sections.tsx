@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { GitHubIcon } from "@/components/icons";
 import { InstallCommand } from "@/components/install-command";
 import { SectionHeader } from "@/components/section-header";
+import { TerminalCommand } from "@/components/terminal-command";
 import { TunnelDiagram } from "@/components/tunnel-diagram";
 import { UseCaseWorkbench } from "@/components/use-case-workbench";
 
@@ -62,7 +63,7 @@ const FEATURES = [
 const PLANS = [
   { name: "Free", price: "$0", description: "For trying a route with a local project.", billingNote: "No credit card required", items: ["Up to 2 active tunnels", "Random GoPort subdomain", "Automatic HTTPS", "WebSocket support", "Basic request inspector", "Community support"], action: "Start free" },
   { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Full Pro access with flexible monthly billing.", billingNote: "Billed monthly. Cancel anytime.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Start 7-day free trial" },
-  { name: "Pro yearly", price: "$29.99", suffix: "/ year", description: "The same Pro features with two months of savings.", billingNote: "Save $5.89 · $2.50/month effective", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose yearly", popular: true, badge: "Best value" },
+  { name: "Pro yearly", price: "$19.99", suffix: "/ year", description: "The same Pro features with two months of savings.", billingNote: "Save 44% with yearly billing", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose yearly", popular: true, badge: "Best value" },
 ];
 
 export function CompatibleServices() {
@@ -164,24 +165,6 @@ export function CompatibleServices() {
   );
 }
 
-export function MainFeatures() {
-  return (
-    <section id="features" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <SectionHeader eyebrow="Built for daily development" title="A small surface area. The right tools inside it." description="GoPort stays focused on the work between localhost and a real public route." />
-      <div className="mt-14 grid divide-y divide-border border-y border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-        {FEATURES.map(({ icon: Icon, title, text }) => (
-          <article key={title} className="px-0 py-7 sm:px-6 sm:first:pl-0 sm:last:pr-0 lg:px-7 lg:first:pl-0 lg:last:pr-0">
-            <Icon className="size-5 text-primary" />
-            <h3 className="mt-6 text-lg font-semibold tracking-[-0.025em] text-foreground">{title}</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{text}</p>
-          </article>
-        ))}
-      </div>
-      <a href="#product" className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-foreground underline decoration-primary/60 underline-offset-4 hover:decoration-primary">See the product in action <ArrowRight className="size-4" /></a>
-    </section>
-  );
-}
-
 export function UseCases() {
   return (
     <section id="use-cases" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
@@ -224,14 +207,14 @@ export function Quickstart() {
             <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">03</span><KeyRound className="size-5 text-muted-foreground" /></div>
             <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Authenticate this machine</h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">Paste the token once. GoPort stores the authenticated session for future tunnels.</p>
-            <code className="mt-7 block overflow-x-auto rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs text-primary">goport auth &lt;token&gt;</code>
+            <TerminalCommand command="goport auth <token>" />
           </li>
 
           <li className="p-6 sm:p-8">
             <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">04</span><TerminalSquare className="size-5 text-muted-foreground" /></div>
             <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Open your first route</h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">Pass the local port where your app is running. GoPort returns its public HTTPS URL.</p>
-            <code className="mt-7 block overflow-x-auto rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs text-primary">goport http 8080</code>
+            <TerminalCommand command="goport http 8080" />
           </li>
         </ol>
       </div>
@@ -242,31 +225,25 @@ export function Quickstart() {
 export function DocsOverview() {
   return (
     <section id="docs" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-center lg:gap-16">
         <SectionHeader eyebrow="Docs" title="See exactly how the tunnel works." description="Follow a request from the public internet, through GoPort Cloud and the CLI, to the application running on localhost." align="left" />
-        <div className="rounded-2xl border border-border bg-card/60 p-6 sm:flex sm:items-center sm:justify-between sm:gap-8">
-          <div className="flex items-start gap-3">
-            <BookOpen className="mt-0.5 size-5 shrink-0 text-primary" />
-            <p className="max-w-md text-sm leading-6 text-muted-foreground">The README covers flags, custom subdomains, reset behavior, self-hosting, and the tunnel architecture.</p>
-          </div>
-          <Button asChild variant="outline" className="mt-5 shrink-0 rounded-full border-border bg-background/70 text-foreground shadow-none hover:bg-secondary sm:mt-0">
-            <a href={`${GITHUB_URL}#readme`} target="_blank" rel="noreferrer noopener">Read the docs <ExternalLink className="size-4" /></a>
-          </Button>
-        </div>
+        <a
+          href={`${GITHUB_URL}#readme`}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="group flex w-full items-center gap-4 rounded-2xl border border-border bg-card/60 p-5 text-left transition-colors hover:border-primary/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-w-[34rem] lg:justify-self-end"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BookOpen className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">Read the GoPort docs</span>
+            <span className="mt-1 block text-sm leading-5 text-muted-foreground">Flags, custom subdomains, self-hosting, and tunnel architecture.</span>
+          </span>
+          <ExternalLink className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+        </a>
       </div>
       <div className="mt-10"><TunnelDiagram /></div>
-    </section>
-  );
-}
-
-export function DeveloperSignals() {
-  const signals = ["Open-source CLI", "MIT licensed", "Self-hostable infrastructure"];
-  return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-7 lg:py-16">
-      <div className="flex flex-col gap-5 border-y border-border py-8 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-xl text-xl font-medium tracking-[-0.025em] text-foreground">Built for developers who want to see how their route works.</p>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">{signals.map((signal) => <span key={signal} className="inline-flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary" />{signal}</span>)}</div>
-      </div>
     </section>
   );
 }
@@ -289,43 +266,6 @@ export function Pricing() {
             <Button asChild variant={plan.popular ? "default" : "outline"} className={`mt-auto w-full rounded-full ${plan.popular ? "bg-primary text-primary-foreground shadow-none hover:bg-primary/90" : "border-border bg-transparent text-foreground shadow-none hover:bg-secondary"}`}><Link href="/signup">{plan.action}</Link></Button>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-export function TrustSignals() {
-  const signals = [
-    { icon: GitBranch, title: "Open-source CLI", text: "Inspect the code that opens the connection from your machine." },
-    { icon: Server, title: "Self-hostable", text: "Run the tunnel infrastructure in an environment you control." },
-    { icon: LockKeyhole, title: "Clear boundaries", text: "Routes begin with an outbound connection from your local machine." },
-  ];
-  return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <div className="route-surface rounded-[1.5rem] border border-border px-6 py-12 sm:px-10 lg:px-14">
-        <SectionHeader eyebrow="Trust" title="Open source where your tunnel begins." description="A transparent developer tool: inspect the CLI, follow releases, and self-host when you need to." />
-        <div className="mt-12 grid gap-8 border-t border-border pt-8 md:grid-cols-3">
-          {signals.map(({ icon: Icon, title, text }) => <article key={title}><Icon className="size-5 text-primary" /><h3 className="mt-5 font-semibold text-foreground">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p></article>)}
-        </div>
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Button asChild variant="outline" className="rounded-full border-border bg-background/60 text-foreground shadow-none hover:bg-secondary"><a href={GITHUB_URL} target="_blank" rel="noreferrer noopener"><GitHubIcon className="size-4" />View source</a></Button>
-          <Button asChild variant="ghost" className="rounded-full text-foreground hover:bg-secondary"><a href={`${GITHUB_URL}#readme`} target="_blank" rel="noreferrer noopener">Read docs</a></Button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function FinalCta() {
-  return (
-    <section className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <div className="border-l-2 border-primary py-4 pl-6 sm:pl-8">
-        <p className="text-sm font-medium text-primary">Ready when your local app is.</p>
-        <h2 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground sm:text-6xl">Give your localhost a route worth sharing.</h2>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button asChild size="lg" className="h-11 rounded-full bg-primary px-5 text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/signup">Start free <ArrowRight className="size-4" /></Link></Button>
-          <Button asChild size="lg" variant="outline" className="h-11 rounded-full border-border bg-card/60 px-5 text-foreground shadow-none hover:bg-secondary"><a href="#quickstart">View quickstart</a></Button>
-        </div>
       </div>
     </section>
   );

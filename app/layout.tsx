@@ -52,7 +52,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark bg-background`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}
+      suppressHydrationWarning
+    >
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-4RDRG6148J"

@@ -54,8 +54,8 @@ export function InstallCommand() {
         const copied = copiedId === platform.id;
 
         return (
-          <div key={platform.id} className="grid gap-3 rounded-2xl border border-border bg-card/75 p-3 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:items-stretch">
-            <Button asChild variant="outline" className="h-auto min-h-12 justify-between rounded-xl border-border bg-background/75 px-4 text-foreground shadow-none hover:bg-secondary">
+          <div key={platform.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-stretch gap-3 rounded-2xl border border-border bg-card/75 p-3">
+            <Button asChild variant="outline" className="h-auto min-h-12 w-[13.5rem] justify-start rounded-xl border-border bg-background/75 px-4 text-foreground shadow-none hover:bg-secondary">
               <a href={platform.download} target="_blank" rel="noreferrer noopener">
                 <span className="inline-flex items-center gap-2"><Icon className="size-4" />Download {platform.label}</span>
                 <Download className="size-4 text-primary" />
