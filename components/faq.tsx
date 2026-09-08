@@ -1,56 +1,24 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SectionHeader } from "@/components/section-header";
 
 const FAQS = [
-  {
-    q: "Is GoPort really free?",
-    a: "Yes. GoPort is completely free and open source under the MIT license. There are no metered tunnels, paywalled features, or hidden fees. You can also self-host it on your own infrastructure.",
-  },
-  {
-    q: "How is GoPort different from ngrok?",
-    a: "GoPort gives you the same instant public URLs for localhost, but it's open source and fully self-hostable. You own your tunnels, domains, and data — no vendor lock-in and no usage limits.",
-  },
-  {
-    q: "Do I need to configure port forwarding or a public IP?",
-    a: "No. The GoPort agent opens a secure outbound connection to the cloud, so it works behind NAT and firewalls without any port forwarding, router changes, or a public IP address.",
-  },
-  {
-    q: "Can I use my own custom domain?",
-    a: "Absolutely. You can request a memorable subdomain like myapp.goport.uz, or point a fully custom domain at your tunnel for a production-like setup.",
-  },
-  {
-    q: "Does it support WebSockets and streaming?",
-    a: "Yes. GoPort detects HTTP upgrade requests and switches to raw bidirectional forwarding, so WebSocket apps, server-sent events, and streaming responses work seamlessly.",
-  },
-  {
-    q: "How do I install it?",
-    a: "Use your platform's package manager — brew install goport on macOS, choco install goport on Windows, or the install script on Linux. Then run goport http 8080 to expose your local server.",
-  },
+  { q: "Can I start with GoPort for free?", a: "Yes. The Free plan lets you open routes and try GoPort with a local project. The CLI is also open source under the MIT license, and you can self-host the infrastructure." },
+  { q: "How is GoPort different from ngrok?", a: "GoPort is an open-source tunnel for local development. You can inspect the CLI, self-host the infrastructure, and use a public HTTPS URL for the services running on your machine." },
+  { q: "Do I need port forwarding or a public IP?", a: "No. The GoPort agent creates an outbound connection, so your local app can receive routed traffic without opening an inbound port or changing your router." },
+  { q: "Can I use my own custom domain?", a: "Yes. GoPort supports memorable subdomains and custom domains for projects that need a stable public address." },
+  { q: "Does it support WebSockets and streaming?", a: "Yes. GoPort forwards HTTP upgrade requests and long-lived connections, so WebSockets, server-sent events, and streaming responses can pass through the tunnel." },
+  { q: "How do I install it?", a: "Install the GoPort CLI through your platform package manager, authenticate it, then run goport http 8080 to route your local server." },
 ];
 
 export function Faq() {
   return (
-    <section id="faq" className="mx-auto w-full max-w-3xl px-6 py-24">
-      <SectionHeader className="mb-12" title="FAQ" titleClassName="text-primary" />
-
-      <Accordion type="single" collapsible className="w-full">
-        {FAQS.map((faq, i) => (
-          <AccordionItem
-            key={faq.q}
-            value={`item-${i}`}
-            className="border-border/60"
-          >
-            <AccordionTrigger className="cursor-pointer py-5 text-base text-foreground hover:no-underline hover:text-primary">
-              {faq.q}
-            </AccordionTrigger>
-            <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-              {faq.a}
-            </AccordionContent>
+    <section id="faq" className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-20 sm:px-7 lg:grid-cols-[0.65fr_1.35fr] lg:py-28">
+      <SectionHeader eyebrow="FAQ" title="Questions before you route it?" description="The short answers for setting up a local public URL." align="left" />
+      <Accordion type="single" collapsible className="border-y border-border">
+        {FAQS.map((faq, index) => (
+          <AccordionItem key={faq.q} value={`item-${index}`} className="border-border">
+            <AccordionTrigger className="cursor-pointer py-5 text-left text-base font-medium text-foreground hover:no-underline hover:text-primary">{faq.q}</AccordionTrigger>
+            <AccordionContent className="max-w-2xl pb-5 text-sm leading-6 text-muted-foreground">{faq.a}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

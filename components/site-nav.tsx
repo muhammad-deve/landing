@@ -1,90 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { GoPortLogo } from "@/components/goport-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#faq", label: "FAQ" },
+  { href: "#product", label: "Product" },
+  { href: "#use-cases", label: "Use cases" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "https://github.com/muhammad-deve/GoPort#readme", label: "Docs", external: true },
+  { href: "#quickstart", label: "Quickstart" },
 ];
 
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    let ticking = false;
-
-    const update = () => {
-      const y = window.scrollY;
-      setScrolled(y > 12);
-
-      // The navbar only lives at the very top of the page. The moment you
-      // leave the top it hides and stays hidden — small upward scrolls no
-      // longer flash it back in. Scroll back to the top to bring it back.
-      setHidden(y >= 80);
-
-      ticking = false;
-    };
-
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(update);
-    };
-
+    const update = () => setScrolled(window.scrollY > 12);
     update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
   }, []);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        hidden ? "-translate-y-full" : "translate-y-0",
-        scrolled
-          ? "border-b border-border/60 bg-background/80 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent",
-      )}
-    >
-      <nav className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-6 pt-3 sm:h-24 sm:pt-4">
-        <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
+    <header className={cn("fixed inset-x-0 top-0 z-50 border-b transition-[background-color,border-color] duration-300", scrolled ? "border-border/90 bg-background/90 backdrop-blur-xl" : "border-transparent bg-background/55 backdrop-blur-md")}>
+      <nav className="mx-auto flex h-[4.5rem] w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-7">
+        <Link href="/" className="flex shrink-0 items-center transition-opacity hover:opacity-70" aria-label="GoPort home">
           <GoPortLogo className="h-7 w-auto text-foreground" />
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="relative text-sm text-muted-foreground transition-colors hover:text-foreground after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
-            >
+            <a key={link.href} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer noopener" : undefined} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {link.label}
             </a>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant="ghost"
-            className="text-muted-foreground hover:bg-white/5 hover:text-foreground"
-          >
-            <Link href="/login">Log in</Link>
-          </Button>
-          <Button
-            asChild
-            className="bg-primary text-primary-foreground shadow-[0_0_24px_-6px] shadow-primary/50 transition-all hover:bg-primary/90 hover:shadow-primary/70"
-          >
-            <Link href="/signup">Sign up</Link>
-          </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
+          <Button asChild variant="ghost" className="hidden text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"><Link href="/login">Log in</Link></Button>
+          <Button asChild className="h-9 rounded-full bg-primary px-4 text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/signup">Start free</Link></Button>
+          <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label="Toggle navigation" className="flex size-9 items-center justify-center rounded-full border border-border bg-card/70 text-foreground lg:hidden">
+            {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div id="mobile-navigation" className="border-t border-border bg-background/95 px-5 py-5 backdrop-blur-xl lg:hidden">
+          <div className="mx-auto grid max-w-7xl gap-1">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer noopener" : undefined} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
+                {link.label}
+              </a>
+            ))}
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary sm:hidden">Log in</Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

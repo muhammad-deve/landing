@@ -6,33 +6,15 @@ interface SectionHeaderProps {
   description?: string;
   className?: string;
   titleClassName?: string;
+  align?: "left" | "center";
 }
 
-/**
- * Shared, symmetric section header. Every section uses the same type scale
- * and spacing so headings stay proportional to one another across the page.
- */
-export function SectionHeader({ eyebrow, title, description, className, titleClassName }: SectionHeaderProps) {
+export function SectionHeader({ eyebrow, title, description, className, titleClassName, align = "center" }: SectionHeaderProps) {
   return (
-    <div className={cn("mx-auto max-w-2xl text-center", className)}>
-      {eyebrow ? (
-        <span className="font-mono text-sm font-medium uppercase tracking-[0.25em] text-primary">
-          {eyebrow}
-        </span>
-      ) : null}
-      <h2
-        className={cn(
-          "mt-3 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl",
-          titleClassName,
-        )}
-      >
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-4 text-pretty text-base text-muted-foreground sm:text-lg">
-          {description}
-        </p>
-      ) : null}
+    <div className={cn(align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-xl text-left", className)}>
+      {eyebrow && <p className="text-sm font-medium text-primary">{eyebrow}</p>}
+      <h2 className={cn("mt-3 text-balance text-4xl font-semibold tracking-[-0.045em] text-foreground sm:text-5xl", titleClassName)}>{title}</h2>
+      {description && <p className="mt-5 text-pretty text-base leading-7 text-muted-foreground">{description}</p>}
     </div>
   );
 }

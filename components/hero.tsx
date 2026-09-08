@@ -1,69 +1,44 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TerminalPreview } from "@/components/terminal-preview";
-import { GitHubIcon } from "@/components/icons";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 export function Hero() {
   return (
-    <section className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 pt-36 pb-20 text-center sm:pt-44">
-      {/* badge */}
-      <a
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="group mb-8 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur transition-colors hover:border-primary/40 hover:text-foreground"
-      >
-        <span className="flex size-2 items-center justify-center">
-          <span className="absolute size-2 animate-ping rounded-full bg-primary/60" />
+    <section id="product" className="mx-auto w-full max-w-7xl px-5 pb-24 pt-36 sm:px-7 sm:pt-44 lg:pb-32">
+      <div className="mx-auto max-w-4xl text-center">
+        <div className="mx-auto mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm">
           <span className="size-2 rounded-full bg-primary" />
-        </span>
-        Free &amp; open source — star us on GitHub
-        <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-      </a>
+          Public HTTPS tunnels for localhost
+        </div>
+        <h1 className="text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.055em] text-foreground sm:text-6xl lg:text-[4.75rem]">
+          Give localhost a public URL.
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
+          Run one command. GoPort creates a secure URL for your local app, API, or webhook handler—without deploying it first.
+        </p>
 
-      <h1 className="text-balance text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-7xl">
-        Expose localhost.
-        <br />
-        <span className="bg-gradient-to-r from-primary via-primary to-emerald-300 bg-clip-text text-transparent">
-          Instantly.
-        </span>
-      </h1>
+        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button asChild size="lg" className="h-12 rounded-full bg-primary px-6 text-base text-primary-foreground shadow-[0_10px_30px_-16px] shadow-primary hover:bg-primary/90">
+            <Link href="/signup">Start free <ArrowRight className="size-4" /></Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-border bg-card/70 px-6 text-base text-foreground shadow-none hover:bg-secondary">
+            <a href={`${GITHUB_URL}#readme`} target="_blank" rel="noreferrer noopener">Read quickstart</a>
+          </Button>
+        </div>
 
-      <p className="mt-6 max-w-xl text-pretty text-lg text-muted-foreground">
-        Turn your computer into a server in seconds. Get a secure public URL for any local
-        port — self-hosted, free, and open source.
-      </p>
-
-      {/* CTAs */}
-      <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-        <Button
-          asChild
-          size="lg"
-          className="group h-12 bg-primary px-7 text-base font-medium text-primary-foreground shadow-[0_0_30px_-6px] shadow-primary/50 transition-all hover:bg-primary/90 hover:shadow-primary/70"
-        >
-          <Link href="/signup">
-            Start for free
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </Button>
-        <Button
-          asChild
-          size="lg"
-          variant="outline"
-          className="h-12 border-border/70 bg-transparent px-7 text-base font-medium text-foreground hover:bg-white/5"
-        >
-          <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener">
-            <GitHubIcon className="size-4" />
-            Source code
-          </a>
-        </Button>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+          {["HTTPS included", "WebSockets supported", "Request inspection"].map((item) => (
+            <span key={item} className="inline-flex items-center gap-1.5"><Check className="size-3.5 text-primary" />{item}</span>
+          ))}
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary"><Github className="size-3.5" />Open-source CLI</a>
+        </div>
       </div>
 
-      {/* terminal */}
-      <div className="mt-20 flex w-full justify-center">
+      <div className="relative mx-auto mt-14 max-w-5xl">
+        <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-primary/[0.07] blur-3xl" />
         <TerminalPreview />
       </div>
     </section>

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,7 +40,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d0d0d",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f9fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#11191e" },
+  ],
 };
 
 export default function RootLayout({
@@ -48,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark bg-background`}>
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-4RDRG6148J"
@@ -64,7 +68,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="font-sans antialiased">
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
