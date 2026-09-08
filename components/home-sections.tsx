@@ -20,6 +20,14 @@ import { UseCaseWorkbench } from "@/components/use-case-workbench";
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 const INTEGRATIONS = [
+  { name: "Stripe", icon: "https://cdn.simpleicons.org/stripe/635BFF" },
+  { name: "GitHub", icon: "https://cdn.simpleicons.org/github/181717" },
+  { name: "Shopify", icon: "https://cdn.simpleicons.org/shopify/7AB55C" },
+  { name: "Slack", icon: "https://a.slack-edge.com/80588/marketing/img/meta/favicon-32.png" },
+  { name: "Discord", icon: "https://cdn.simpleicons.org/discord/5865F2" },
+  { name: "GitLab", icon: "https://cdn.simpleicons.org/gitlab/FC6D26" },
+  { name: "Telegram", icon: "https://cdn.simpleicons.org/telegram/26A5E4" },
+  { name: "Twilio", icon: "https://www.twilio.com/favicon.ico" },
   {
     name: "Click",
     icon: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6a/8e/e5/6a8ee507-4aee-5c09-d357-6111d7f8c7ea/AppIcon-0-0-1x_U007epad-0-11-0-sRGB-85-220.png/256x256bb.png",
@@ -36,10 +44,6 @@ const INTEGRATIONS = [
     appIcon: true,
   },
   { name: "Higgsfield", icon: "https://higgsfield.ai/icon.png", appIcon: true },
-  { name: "Telegram", icon: "https://cdn.simpleicons.org/telegram/26A5E4" },
-  { name: "GitHub", icon: "https://cdn.simpleicons.org/github/181717" },
-  { name: "Stripe", icon: "https://cdn.simpleicons.org/stripe/635BFF" },
-  { name: "Twilio", icon: "https://www.twilio.com/favicon.ico" },
 ];
 
 const FEATURES = [
@@ -50,25 +54,82 @@ const FEATURES = [
 ];
 
 const PLANS = [
-  { name: "Free", price: "$0", description: "For trying a route with a local project.", items: ["Up to 2 active tunnels", "Random GoPort subdomain", "Automatic HTTPS", "WebSocket support", "Basic request inspector", "Community support"], action: "Start free" },
-  { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Full Pro access with flexible monthly billing.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose monthly" },
-  { name: "Pro yearly", price: "$29.99", suffix: "/ year", description: "The same Pro features with two months of savings.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose yearly", popular: true, badge: "Best value" },
+  { name: "Free", price: "$0", description: "For trying a route with a local project.", billingNote: "No credit card required", items: ["Up to 2 active tunnels", "Random GoPort subdomain", "Automatic HTTPS", "WebSocket support", "Basic request inspector", "Community support"], action: "Start free" },
+  { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Full Pro access with flexible monthly billing.", billingNote: "Billed monthly. Cancel anytime.", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Start 7-day free trial" },
+  { name: "Pro yearly", price: "$29.99", suffix: "/ year", description: "The same Pro features with two months of savings.", billingNote: "Save $5.89 · $2.50/month effective", items: ["More simultaneous tunnels", "Persistent subdomains", "Custom domains", "Longer request history", "Higher traffic limits", "Tunnel access controls"], action: "Choose yearly", popular: true, badge: "Best value" },
 ];
 
 export function CompatibleServices() {
+  const outcomes = [
+    "Receive production-shaped webhooks locally",
+    "Inspect headers, signatures, and JSON bodies",
+    "Retry failed events without another deploy",
+  ];
+
   return (
     <section id="integrations" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <SectionHeader title="Bring real webhook traffic to your local app." description="If a service can send an HTTPS request, you can point it at GoPort and receive it on localhost." />
+      <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:gap-16">
+        <SectionHeader
+          eyebrow="Integrations"
+          title="Test real callbacks before you deploy."
+          description="Give any service a GoPort URL. Its webhook reaches the handler running on your machine, where you can inspect and retry it."
+          align="left"
+        />
 
-      <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-border bg-card/75 shadow-[0_28px_90px_-55px_rgba(8,17,19,0.55)]">
-        <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4 lg:grid-cols-8">
+        <div className="route-surface overflow-hidden rounded-[1.5rem] border border-border shadow-[0_24px_70px_-45px_rgba(8,17,19,0.5)]">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5 text-xs sm:px-6">
+            <span className="inline-flex items-center gap-2 font-medium text-foreground"><span className="size-2 rounded-full bg-primary" />Live request path</span>
+            <span className="font-mono text-primary">202 accepted</span>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
+              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-white p-1.5"><img src="https://cdn.simpleicons.org/stripe/635BFF" alt="" width={20} height={20} className="size-full" /></span>
+                  <span className="text-sm font-semibold text-foreground">Stripe event</span>
+                </div>
+                <code className="mt-3 block truncate text-[11px] text-muted-foreground">checkout.session.completed</code>
+              </div>
+
+              <ArrowRight className="mx-auto size-4 rotate-90 self-center text-primary sm:rotate-0" />
+
+              <div className="min-w-0 rounded-xl border border-primary/30 bg-primary/[0.08] p-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-mono text-[10px] font-bold text-primary-foreground">GP</span>
+                  <span className="text-sm font-semibold text-foreground">GoPort route</span>
+                </div>
+                <code className="mt-3 block truncate text-[11px] text-primary">checkout.goport.uz</code>
+              </div>
+
+              <ArrowRight className="mx-auto size-4 rotate-90 self-center text-primary sm:rotate-0" />
+
+              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-card"><Server className="size-4 text-foreground" /></span>
+                  <span className="text-sm font-semibold text-foreground">Local handler</span>
+                </div>
+                <code className="mt-3 block truncate text-[11px] text-muted-foreground">localhost:3000/webhooks</code>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-background/55 px-4 py-3 font-mono text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">POST /api/webhooks/stripe</span>
+              <span>signature verified</span>
+              <span className="ml-auto text-primary">48 ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10 overflow-hidden rounded-[1.5rem] border border-border bg-card/70 shadow-[0_28px_90px_-60px_rgba(8,17,19,0.5)]">
+        <div className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
           {INTEGRATIONS.map((integration) => (
-            <div key={integration.name} className="flex min-h-28 flex-col items-center justify-center gap-3 border-b border-r border-border px-3 last:border-r-0 sm:[&:nth-child(n+5)]:border-b-0 lg:border-b-0">
+            <div key={integration.name} className="flex min-h-24 flex-col items-center justify-center gap-2.5 border-b border-r border-border px-3 py-4">
               <span
-                className={`flex size-11 items-center justify-center overflow-hidden border border-border bg-white shadow-sm ${integration.appIcon ? "rounded-[0.9rem]" : "rounded-xl p-2.5"}`}
+                className={`flex size-10 items-center justify-center overflow-hidden border border-border bg-white shadow-sm ${integration.appIcon ? "rounded-xl" : "rounded-lg p-2"}`}
                 aria-hidden
               >
-                {/* Native img keeps third-party SVG and app-icon assets unoptimized and crisp. */}
                 <img
                   src={integration.icon}
                   alt=""
@@ -83,27 +144,13 @@ export function CompatibleServices() {
             </div>
           ))}
         </div>
-
-        <div className="grid gap-10 p-6 sm:p-9 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:p-12">
-          <div>
-            <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
-              <span className="rounded-lg border border-border bg-background px-3 py-2 text-foreground">Payme callback</span>
-              <ArrowRight className="size-4 text-primary" />
-              <span className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-primary">shop.goport.uz</span>
+        <div className="grid border-t border-border sm:grid-cols-3 sm:divide-x sm:divide-border">
+          {outcomes.map((item) => (
+            <div key={item} className="flex items-start gap-2.5 border-b border-border px-5 py-4 text-sm leading-6 text-muted-foreground last:border-b-0 sm:border-b-0">
+              <CheckCircle2 className="mt-1 size-4 shrink-0 text-primary" />
+              {item}
             </div>
-            <div className="ml-5 h-8 border-l border-dashed border-primary/50" />
-            <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
-              <span className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-primary">GoPort tunnel</span>
-              <ArrowRight className="size-4 text-primary" />
-              <span className="rounded-lg border border-border bg-background px-3 py-2 text-foreground">localhost:3000/api/payment</span>
-            </div>
-          </div>
-
-          <ul className="space-y-3 text-sm leading-6 text-muted-foreground">
-            {["Receive payment callbacks without a staging deploy", "Inspect request headers and JSON payloads", "Test OAuth redirects from a real provider", "Connect mobile apps and remote devices", "Keep WebSocket connections open through the tunnel"].map((item) => (
-              <li key={item} className="flex items-start gap-2"><CheckCircle2 className="mt-1 size-4 shrink-0 text-primary" />{item}</li>
-            ))}
-          </ul>
+          ))}
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">Service names indicate technical compatibility with public HTTPS endpoints; no partnership or endorsement is implied.</p>
@@ -183,15 +230,16 @@ export function Pricing() {
       <SectionHeader eyebrow="Pricing" title="Free to start. Pro when you need more." description="Choose Free, or get every Pro feature with monthly or yearly billing." />
       <div className="mt-14 grid gap-4 lg:grid-cols-3">
         {PLANS.map((plan) => (
-          <article key={plan.name} className={`relative rounded-2xl border p-7 ${plan.popular ? "border-primary bg-primary/[0.07]" : "border-border bg-card/60"}`}>
+          <article key={plan.name} className={`relative flex h-full flex-col rounded-2xl border p-7 ${plan.popular ? "border-primary bg-primary/[0.07]" : "border-border bg-card/60"}`}>
             {plan.popular && <span className="absolute right-6 top-6 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{plan.badge}</span>}
             <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
             <p className="mt-3 max-w-[16rem] text-sm leading-6 text-muted-foreground">{plan.description}</p>
             <div className="mt-8 flex items-end gap-1"><span className="text-5xl font-semibold tracking-[-0.05em] text-foreground">{plan.price}</span>{plan.suffix && <span className="mb-1 text-sm text-muted-foreground">{plan.suffix}</span>}</div>
-            <ul className="my-8 space-y-3 border-y border-border py-6">
+            <p className={`mt-4 inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-medium ${plan.popular ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>{plan.billingNote}</p>
+            <ul className="my-7 space-y-3 border-y border-border py-6">
               {plan.items.map((item) => <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{item}</li>)}
             </ul>
-            <Button asChild variant={plan.popular ? "default" : "outline"} className={`w-full rounded-full ${plan.popular ? "bg-primary text-primary-foreground shadow-none hover:bg-primary/90" : "border-border bg-transparent text-foreground shadow-none hover:bg-secondary"}`}><Link href="/signup">{plan.action}</Link></Button>
+            <Button asChild variant={plan.popular ? "default" : "outline"} className={`mt-auto w-full rounded-full ${plan.popular ? "bg-primary text-primary-foreground shadow-none hover:bg-primary/90" : "border-border bg-transparent text-foreground shadow-none hover:bg-secondary"}`}><Link href="/signup">{plan.action}</Link></Button>
           </article>
         ))}
       </div>

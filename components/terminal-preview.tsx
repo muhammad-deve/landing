@@ -30,30 +30,42 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
       return;
     }
 
-    const typeTimer = window.setInterval(() => {
-      setCommandLength((length) => {
-        if (length >= COMMAND.length) {
-          window.clearInterval(typeTimer);
-          return length;
-        }
-        return length + 1;
-      });
-    }, 55);
+    const timeouts: number[] = [];
+    let typeTimer: number | undefined;
 
-    const detailsTimer = window.setTimeout(() => {
-      setDetailsVisible(true);
-    }, COMMAND.length * 55 + 220);
+    const runCycle = () => {
+      if (typeTimer) window.clearInterval(typeTimer);
+      timeouts.forEach((timer) => window.clearTimeout(timer));
+      timeouts.length = 0;
 
-    const requestTimers = REQUESTS.map((_, index) =>
-      window.setTimeout(() => {
-        setRequestCount(index + 1);
-      }, COMMAND.length * 55 + 600 + index * 500),
-    );
+      setCommandLength(0);
+      setDetailsVisible(false);
+      setRequestCount(0);
+
+      typeTimer = window.setInterval(() => {
+        setCommandLength((length) => {
+          if (length >= COMMAND.length) {
+            if (typeTimer) window.clearInterval(typeTimer);
+            return length;
+          }
+          return length + 1;
+        });
+      }, 55);
+
+      timeouts.push(
+        window.setTimeout(() => setDetailsVisible(true), COMMAND.length * 55 + 220),
+        ...REQUESTS.map((_, index) =>
+          window.setTimeout(() => setRequestCount(index + 1), COMMAND.length * 55 + 600 + index * 500),
+        ),
+        window.setTimeout(runCycle, COMMAND.length * 55 + 600 + REQUESTS.length * 500 + 2400),
+      );
+    };
+
+    runCycle();
 
     return () => {
-      window.clearInterval(typeTimer);
-      window.clearTimeout(detailsTimer);
-      requestTimers.forEach((timer) => window.clearTimeout(timer));
+      if (typeTimer) window.clearInterval(typeTimer);
+      timeouts.forEach((timer) => window.clearTimeout(timer));
     };
   }, [animated]);
 
@@ -99,7 +111,7 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
             <div className="mt-8 min-w-[36rem]">
               <div className="font-semibold text-foreground">HTTP Requests</div>
               <div className="text-muted-foreground/80">-------------</div>
-              <div className="mt-2 space-y-1 text-xs" aria-live={animated ? "polite" : undefined}>
+              <div className="mt-2 space-y-1 text-xs">
                 {REQUESTS.slice(0, requestCount).map((request) => (
                   <div key={`${request.time}-${request.method}`} className={animated ? "grid animate-in grid-cols-[5rem_4.5rem_12.5rem_4.5rem] items-center fade-in slide-in-from-bottom-1 duration-300" : "grid grid-cols-[5rem_4.5rem_12.5rem_4.5rem] items-center"}>
                     <span className="text-muted-foreground">{request.time}</span>

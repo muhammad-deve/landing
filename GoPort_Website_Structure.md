@@ -333,13 +333,17 @@ Possible features:
 
 Button:
 
-**Choose monthly**
+**Start 7-day free trial**
 
 ---
 
 ## Pro yearly
 
 **$29.99 / year**
+
+Show the savings clearly:
+
+**Save $5.89 · $2.50/month effective**
 
 Mark this plan:
 
