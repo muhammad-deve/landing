@@ -12,6 +12,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
+      subtitle="Manage your tunnels, CLI tokens, and public domains."
       footer={
         <>
           New to GoPort?{" "}

@@ -1,18 +1,24 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   Check,
   CheckCircle2,
+  ExternalLink,
   GitBranch,
   Globe2,
+  KeyRound,
   LockKeyhole,
+  LogIn,
   MessagesSquare,
   RadioTower,
   Server,
   ShieldCheck,
+  TerminalSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GitHubIcon } from "@/components/icons";
+import { InstallCommand } from "@/components/install-command";
 import { SectionHeader } from "@/components/section-header";
 import { TunnelDiagram } from "@/components/tunnel-diagram";
 import { UseCaseWorkbench } from "@/components/use-case-workbench";
@@ -188,25 +194,66 @@ export function UseCases() {
 }
 
 export function Quickstart() {
-  const steps = [
-    { title: "Authenticate", text: "Copy your token from the GoPort dashboard and connect the CLI.", code: "goport auth YOUR_TOKEN" },
-    { title: "Open a route", text: "Tell GoPort which local port to reach.", code: "goport http 3000" },
-    { title: "Use the URL", text: "Send the HTTPS route to an integration, device, or person.", code: "https://project.goport.uz" },
-  ];
-
   return (
     <section id="quickstart" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <SectionHeader eyebrow="Quickstart" title="Your first public URL is three steps away." description="No port forwarding. No public IP. No deployment step." />
-      <ol className="mt-14 grid gap-4 lg:grid-cols-3">
-        {steps.map((step, index) => (
-          <li key={step.title} className="route-surface rounded-2xl border border-border p-6 sm:p-7">
-            <span className="font-mono text-sm text-primary">0{index + 1}</span>
-            <h3 className="mt-7 text-xl font-semibold tracking-[-0.025em] text-foreground">{step.title}</h3>
-            <p className="mt-3 min-h-12 text-sm leading-6 text-muted-foreground">{step.text}</p>
-            <code className="mt-7 block overflow-x-auto border-t border-border pt-4 font-mono text-xs text-primary">{step.code}</code>
+      <SectionHeader eyebrow="Quickstart" title="From download to public URL, in one place." description="Install the CLI, connect it to your account, then open a secure route to any local port." />
+
+      <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-border bg-card/60 shadow-[0_30px_90px_-60px_rgba(8,17,19,0.5)]">
+        <div className="grid gap-8 border-b border-border p-6 sm:p-8 lg:grid-cols-[0.5fr_1.5fr] lg:items-start lg:p-10">
+          <div className="max-w-sm">
+            <span className="font-mono text-sm text-primary">01</span>
+            <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-foreground">Download the CLI</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Choose your operating system. Use the download button or copy the package command beside it.</p>
+          </div>
+          <InstallCommand />
+        </div>
+
+        <ol className="grid lg:grid-cols-3 lg:divide-x lg:divide-border">
+          <li className="border-b border-border p-6 sm:p-8 lg:border-b-0">
+            <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">02</span><LogIn className="size-5 text-muted-foreground" /></div>
+            <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Sign in and create a token</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Log in to your GoPort account—or create one first—then generate a named CLI token in the dashboard.</p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/login">Log in</Link></Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full border-border bg-transparent text-foreground shadow-none hover:bg-secondary"><Link href="/signup">Create account</Link></Button>
+            </div>
+            <Link href="/dashboard#tokens" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline decoration-primary/60 underline-offset-4 hover:decoration-primary">Create a CLI token <ArrowRight className="size-3.5" /></Link>
           </li>
-        ))}
-      </ol>
+
+          <li className="border-b border-border p-6 sm:p-8 lg:border-b-0">
+            <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">03</span><KeyRound className="size-5 text-muted-foreground" /></div>
+            <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Authenticate this machine</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Paste the token once. GoPort stores the authenticated session for future tunnels.</p>
+            <code className="mt-7 block overflow-x-auto rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs text-primary">goport auth &lt;token&gt;</code>
+          </li>
+
+          <li className="p-6 sm:p-8">
+            <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">04</span><TerminalSquare className="size-5 text-muted-foreground" /></div>
+            <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Open your first route</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Pass the local port where your app is running. GoPort returns its public HTTPS URL.</p>
+            <code className="mt-7 block overflow-x-auto rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs text-primary">goport http 8080</code>
+          </li>
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+export function DocsOverview() {
+  return (
+    <section id="docs" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
+      <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+        <SectionHeader eyebrow="Docs" title="See exactly how the tunnel works." description="Follow a request from the public internet, through GoPort Cloud and the CLI, to the application running on localhost." align="left" />
+        <div className="rounded-2xl border border-border bg-card/60 p-6 sm:flex sm:items-center sm:justify-between sm:gap-8">
+          <div className="flex items-start gap-3">
+            <BookOpen className="mt-0.5 size-5 shrink-0 text-primary" />
+            <p className="max-w-md text-sm leading-6 text-muted-foreground">The README covers flags, custom subdomains, reset behavior, self-hosting, and the tunnel architecture.</p>
+          </div>
+          <Button asChild variant="outline" className="mt-5 shrink-0 rounded-full border-border bg-background/70 text-foreground shadow-none hover:bg-secondary sm:mt-0">
+            <a href={`${GITHUB_URL}#readme`} target="_blank" rel="noreferrer noopener">Read the docs <ExternalLink className="size-4" /></a>
+          </Button>
+        </div>
+      </div>
       <div className="mt-10"><TunnelDiagram /></div>
     </section>
   );

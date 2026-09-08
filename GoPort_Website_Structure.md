@@ -224,33 +224,33 @@ Button:
 
 ---
 
-# 7. How It Works
+# 7. Quickstart
 
-Keep this to exactly 3 steps.
+Keep download, account setup, authentication, and first use together.
 
-## 1. Install
+## 1. Download
 
-Install the GoPort CLI.
+Show macOS, Windows, and Linux download buttons with the matching package command beside each button.
 
-## 2. Run
+## 2. Sign in and create a token
+
+Link to Log in and Create account. Then direct the user to create a named CLI token in the dashboard.
+
+## 3. Authenticate
+
+```bash
+goport auth <token>
+```
+
+## 4. Open a route
 
 ```bash
 goport http 3000
 ```
 
-## 3. Share
-
-Get your public HTTPS URL.
-
-Example:
-
-```text
-https://project.goport.uz
-```
-
 Suggested section title:
 
-> **From localhost to public URL in seconds**
+> **From download to public URL, in one place**
 
 ---
 
@@ -545,7 +545,7 @@ Bottom link:
 
 # Quickstart Page
 
-The Quickstart page should be extremely short.
+The Quickstart page should be short and complete.
 
 ## Step 1 — Install
 
@@ -555,17 +555,23 @@ Show installation commands for:
 - macOS
 - Windows
 
-## Step 2 — Log In
+## Step 2 — Sign in and create a token
 
-Show the CLI login command.
+Link to Log in and Create account, then direct the user to the CLI token area in the dashboard.
 
-## Step 3 — Start Tunnel
+## Step 3 — Authenticate the CLI
+
+```bash
+goport auth <token>
+```
+
+## Step 4 — Start Tunnel
 
 ```bash
 goport http 3000
 ```
 
-## Step 4 — Open Public URL
+## Step 5 — Open Public URL
 
 ```text
 https://my-app.goport.uz
@@ -591,17 +597,19 @@ Do not make the pricing page complicated.
 
 # Docs
 
-Docs should include:
+The homepage Docs section should:
 
-- Installation
-- CLI commands
-- Authentication
-- HTTP tunnels
-- WebSockets
-- Custom subdomains
-- Custom domains
-- Request inspector
-- Webhook testing
+- Link to `https://github.com/muhammad-deve/GoPort#readme`
+- Show the animated anatomy of a secure tunnel
+- Avoid repeating download, account, token, and first-use instructions from Quickstart
+
+The full README can cover:
+
+- Advanced CLI flags
+- HTTP tunnels and WebSockets
+- Custom subdomains and domains
+- Request inspection and webhook testing
+- Self-hosting and architecture
 - Troubleshooting
 
 ---

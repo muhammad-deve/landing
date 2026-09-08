@@ -12,6 +12,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
+      subtitle="Start free and create your first secure route in minutes."
       footer={
         <>
           Already have an account?{" "}

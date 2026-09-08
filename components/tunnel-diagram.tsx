@@ -2,10 +2,8 @@ import { Cloud, Terminal, Globe, MonitorSmartphone } from "lucide-react";
 
 export function TunnelDiagram() {
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card/30 p-6 backdrop-blur sm:p-10">
-      <div className="mx-auto mb-12 w-fit rounded-md border border-border/60 bg-background/60 px-3 py-1 font-mono text-xs text-muted-foreground">
-        Fig. 1 — Anatomy of a secure tunnel
-      </div>
+    <div aria-label="Anatomy of a secure GoPort tunnel" className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card/30 p-6 backdrop-blur sm:p-10">
+      <h3 className="mb-12 text-center text-sm font-medium text-foreground">Anatomy of a secure tunnel</h3>
 
       {/* Animated flow */}
       <div className="flex flex-col items-stretch gap-3">

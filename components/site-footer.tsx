@@ -16,7 +16,7 @@ const FOOTER_LINKS = [
   {
     title: "Developers",
     links: [
-      { label: "Docs", href: `${GITHUB_URL}#readme`, external: true },
+      { label: "Docs", href: "#docs" },
       { label: "GitHub", href: GITHUB_URL, external: true },
       { label: "Status", href: "mailto:hello@goport.uz?subject=GoPort%20status" },
     ],

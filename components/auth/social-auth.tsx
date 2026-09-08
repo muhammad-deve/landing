@@ -17,7 +17,7 @@ export function SocialAuth({ action, onGoogle, disabled }: SocialAuthProps) {
       variant="outline"
       onClick={onGoogle}
       disabled={disabled}
-      className="h-11 w-full border-border/70 bg-transparent font-medium text-foreground hover:bg-white/5"
+      className="h-11 w-full border-border/70 bg-transparent font-medium text-foreground hover:bg-secondary"
     >
       <GoogleIcon className="size-4" />
       {action} with Google

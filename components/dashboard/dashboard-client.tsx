@@ -260,7 +260,7 @@ function TokensSection({
   };
 
   return (
-    <div className="rounded-xl border border-border/70 bg-card/40 p-6 backdrop-blur">
+    <div id="tokens" className="scroll-mt-24 rounded-xl border border-border/70 bg-card/40 p-6 backdrop-blur">
       <div className="flex items-center gap-2">
         <Key className="size-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">CLI tokens</h2>

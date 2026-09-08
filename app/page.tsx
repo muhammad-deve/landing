@@ -1,8 +1,7 @@
 import { AuthRedirect } from "@/components/auth-redirect";
 import { Faq } from "@/components/faq";
-import { CompatibleServices, DeveloperSignals, FinalCta, MainFeatures, Pricing, Quickstart, TrustSignals, UseCases } from "@/components/home-sections";
+import { CompatibleServices, DeveloperSignals, DocsOverview, FinalCta, MainFeatures, Pricing, Quickstart, TrustSignals, UseCases } from "@/components/home-sections";
 import { Hero } from "@/components/hero";
-import { InstallSection } from "@/components/install-section";
 import { PageBackground } from "@/components/page-background";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -19,8 +18,8 @@ export default function Home() {
         <CompatibleServices />
         <MainFeatures />
         <UseCases />
-        <InstallSection />
         <Quickstart />
+        <DocsOverview />
         <DeveloperSignals />
         <Pricing />
         <TrustSignals />

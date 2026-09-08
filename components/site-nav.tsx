@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: "#product", label: "Product" },
   { href: "#use-cases", label: "Use cases" },
   { href: "#pricing", label: "Pricing" },
-  { href: "https://github.com/muhammad-deve/GoPort#readme", label: "Docs", external: true },
+  { href: "#docs", label: "Docs" },
   { href: "#quickstart", label: "Quickstart" },
 ];
 
@@ -36,7 +36,7 @@ export function SiteNav() {
 
         <div className="hidden items-center gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer noopener" : undefined} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <a key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {link.label}
             </a>
           ))}
@@ -56,7 +56,7 @@ export function SiteNav() {
         <div id="mobile-navigation" className="border-t border-border bg-background/95 px-5 py-5 backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-7xl gap-1">
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer noopener" : undefined} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
+              <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
                 {link.label}
               </a>
             ))}

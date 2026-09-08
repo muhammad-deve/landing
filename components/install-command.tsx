@@ -1,52 +1,82 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
 import { AppleIcon, LinuxIcon, WindowsIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+
+const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 const PLATFORMS = [
-  { id: "macos", label: "macOS", icon: AppleIcon, prompt: "$", command: "brew tap muhammad-deve/goport && brew install goport" },
-  { id: "windows", label: "Windows", icon: WindowsIcon, prompt: ">", command: "choco install goport" },
-  { id: "linux", label: "Linux", icon: LinuxIcon, prompt: "$", command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport" },
+  {
+    id: "macos",
+    label: "macOS",
+    icon: AppleIcon,
+    prompt: "$",
+    command: "brew tap muhammad-deve/goport && brew install goport",
+    download: `${GITHUB_URL}#installation`,
+  },
+  {
+    id: "windows",
+    label: "Windows",
+    icon: WindowsIcon,
+    prompt: ">",
+    command: "choco install goport",
+    download: "https://community.chocolatey.org/packages/goport",
+  },
+  {
+    id: "linux",
+    label: "Linux",
+    icon: LinuxIcon,
+    prompt: "$",
+    command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport",
+    download: `${GITHUB_URL}/releases/latest/download/goport-linux-amd64`,
+  },
 ];
 
 export function InstallCommand() {
-  const [activeId, setActiveId] = useState("macos");
-  const [copied, setCopied] = useState(false);
-  const platform = PLATFORMS.find((item) => item.id === activeId) ?? PLATFORMS[0];
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const copy = async () => {
+  const copy = async (id: string, command: string) => {
     try {
-      await navigator.clipboard.writeText(platform.command);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
+      await navigator.clipboard.writeText(command);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId(null), 1600);
     } catch {
-      setCopied(false);
+      setCopiedId(null);
     }
   };
 
   return (
-    <div className="w-full">
-      <div className="flex w-fit items-center gap-1 rounded-full border border-border bg-secondary/70 p-1">
-        {PLATFORMS.map((item) => {
-          const Icon = item.icon;
-          const active = item.id === platform.id;
-          return (
-            <button key={item.id} type="button" onClick={() => setActiveId(item.id)} aria-pressed={active} className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <Icon className="size-4" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-3">
+      {PLATFORMS.map((platform) => {
+        const Icon = platform.icon;
+        const copied = copiedId === platform.id;
 
-      <div className="mt-4 flex min-h-24 items-start gap-3 rounded-2xl border border-border bg-card/90 p-5 font-mono text-sm shadow-sm">
-        <span className="select-none text-primary">{platform.prompt}</span>
-        <code className="min-w-0 flex-1 whitespace-pre-wrap break-all leading-6 text-foreground">{platform.command}</code>
-        <button type="button" onClick={copy} aria-label="Copy installation command" className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
-        </button>
-      </div>
+        return (
+          <div key={platform.id} className="grid gap-3 rounded-2xl border border-border bg-card/75 p-3 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:items-stretch">
+            <Button asChild variant="outline" className="h-auto min-h-12 justify-between rounded-xl border-border bg-background/75 px-4 text-foreground shadow-none hover:bg-secondary">
+              <a href={platform.download} target="_blank" rel="noreferrer noopener">
+                <span className="inline-flex items-center gap-2"><Icon className="size-4" />Download {platform.label}</span>
+                <Download className="size-4 text-primary" />
+              </a>
+            </Button>
+
+            <div className="flex min-h-12 min-w-0 items-start gap-3 rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs">
+              <span className="select-none text-primary">{platform.prompt}</span>
+              <code className="min-w-0 flex-1 break-all leading-5 text-foreground">{platform.command}</code>
+              <button
+                type="button"
+                onClick={() => copy(platform.id, platform.command)}
+                aria-label={`Copy ${platform.label} installation command`}
+                className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
