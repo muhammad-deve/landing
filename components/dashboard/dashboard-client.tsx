@@ -11,9 +11,9 @@ import {
   BarChart3,
   BookOpen,
   Check,
+  Camera,
   ChevronRight,
   CircleDollarSign,
-  Code2,
   Copy,
   CreditCard,
   Eye,
@@ -27,6 +27,8 @@ import {
   Loader2,
   LockKeyhole,
   LogOut,
+  Mail,
+  MailCheck,
   Menu,
   Network,
   Plus,
@@ -34,32 +36,44 @@ import {
   RefreshCw,
   RotateCw,
   Server,
-  Settings,
   ShieldCheck,
   Square,
   TerminalSquare,
   Trash2,
   X,
-  Zap,
 } from "lucide-react";
 import { GoPortLogo, GoPortMark } from "@/components/goport-logo";
+import { InstallCommand } from "@/components/install-command";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import {
+  type BillingCard,
+  type BillingData,
   type DashboardData,
   type DashboardDomain,
   type TokenItem,
+  API_BASE_URL,
   clearAuthSession,
+  changePassword,
+  confirmEmailChange,
   createToken,
   deleteToken,
   deleteTunnel,
   getDashboard,
   readAuthSession,
+  requestEmailChange,
   stopTunnel,
   UnauthorizedError,
+  uploadProfilePhoto,
+  updateProfileName,
+  updateStoredAuthSession,
+  updateStoredProfileName,
 } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
+import { isPasswordValid } from "@/lib/password";
 
 type DashboardView =
   | "overview"
@@ -69,8 +83,27 @@ type DashboardView =
   | "usage"
   | "billing"
   | "tokens"
-  | "settings"
+  | "profile"
   | "docs";
+
+const DASHBOARD_VIEWS = new Set<DashboardView>([
+  "overview",
+  "tunnels",
+  "inspector",
+  "domains",
+  "usage",
+  "billing",
+  "tokens",
+  "profile",
+  "docs",
+]);
+
+function dashboardViewFromHash(hash: string): DashboardView {
+  const rawView = hash.replace(/^#/, "");
+  if (rawView === "settings") return "profile";
+  const candidate = rawView as DashboardView;
+  return DASHBOARD_VIEWS.has(candidate) ? candidate : "overview";
+}
 
 interface NavItem {
   id: DashboardView;
@@ -94,7 +127,6 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
       { id: "usage", label: "Usage", icon: Gauge },
       { id: "billing", label: "Billing", icon: CreditCard },
       { id: "tokens", label: "API keys & tokens", icon: KeyRound },
-      { id: "settings", label: "Settings", icon: Settings },
     ],
   },
 ];
@@ -107,11 +139,19 @@ const VIEW_COPY: Record<DashboardView, { title: string; description: string }> =
   usage: { title: "Usage", description: "Understand where requests and bandwidth are being used." },
   billing: { title: "Billing", description: "Manage your plan, limits, and future invoices." },
   tokens: { title: "API keys & tokens", description: "Authenticate trusted machines and CI environments." },
-  settings: { title: "Settings", description: "Profile, security, and account preferences." },
+  profile: { title: "Profile", description: "Manage your photo, personal details, and sign-in security." },
   docs: { title: "Getting started", description: "Go from install to a public HTTPS URL in a few minutes." },
 };
 
 const PANEL = "border border-border/80 bg-white/90 dark:bg-card/72";
+const SIDEBAR_PRESS = "cursor-pointer transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none";
+const CANCELLATION_REASONS = [
+  { id: "price", label: "The price is too high" },
+  { id: "usage", label: "I do not use GoPort enough" },
+  { id: "features", label: "A feature I need is missing" },
+  { id: "alternative", label: "I am switching to another service" },
+  { id: "other", label: "Something else" },
+] as const;
 
 export function DashboardClient() {
   const router = useRouter();
@@ -163,14 +203,40 @@ export function DashboardClient() {
   }, [load]);
 
   useEffect(() => {
+    const syncViewFromUrl = () => {
+      const nextView = dashboardViewFromHash(window.location.hash);
+      if (window.location.hash === "#settings") {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#profile`);
+      }
+      setView(nextView);
+      setMobileMenuOpen(false);
+    };
+
+    syncViewFromUrl();
+    window.addEventListener("hashchange", syncViewFromUrl);
+    window.addEventListener("popstate", syncViewFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncViewFromUrl);
+      window.removeEventListener("popstate", syncViewFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
     const interval = window.setInterval(() => void load(true), 15_000);
     return () => window.clearInterval(interval);
   }, [load]);
 
   const navigate = (next: DashboardView) => {
+    if (next === view) {
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    const baseUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.pushState(null, "", next === "overview" ? baseUrl : `${baseUrl}#${next}`);
     setView(next);
     setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
 
   const runTunnelAction = async (action: "stop" | "delete", domain: DashboardDomain) => {
@@ -282,7 +348,7 @@ export function DashboardClient() {
           {view === "inspector" && <InspectorPanel domains={data.domains} />}
           {view === "domains" && <DomainsPanel domains={data.domains} onCreate={() => setCreateOpen(true)} onSelect={setSelectedDomain} />}
           {view === "usage" && <UsagePanel data={data} />}
-          {view === "billing" && <BillingPanel />}
+          {view === "billing" && <BillingPanel billing={data.billing} />}
           {view === "tokens" && (
             <TokensPanel
               authToken={authToken}
@@ -291,8 +357,15 @@ export function DashboardClient() {
               onAuthError={handleAuthError}
             />
           )}
-          {view === "settings" && <SettingsPanel data={data} onLogout={logout} />}
-          {view === "docs" && <DocsPanel />}
+          {view === "profile" && (
+            <SettingsPanel
+              authToken={authToken}
+              data={data}
+              onChange={() => load(true)}
+              onAuthError={handleAuthError}
+            />
+          )}
+          {view === "docs" && <DocsPanel tokens={data.tokens} onNavigate={navigate} />}
         </main>
       </div>
 
@@ -327,11 +400,11 @@ function DashboardSidebar({
 }) {
   return (
     <>
-      {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-50 bg-[#102124]/35 backdrop-blur-sm lg:hidden" />}
+      {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-50 cursor-pointer bg-[#102124]/35 backdrop-blur-sm lg:hidden" />}
       <aside className={`fixed inset-y-0 left-0 z-[60] flex w-64 flex-col border-r border-border/80 bg-background px-3.5 py-4 transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-12 items-center justify-between px-2">
           <Link href="/" aria-label="GoPort home"><GoPortLogo className="h-6 w-auto text-foreground" /></Link>
-          <button type="button" onClick={onClose} className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden" aria-label="Close navigation"><X className="size-4" /></button>
+          <button type="button" onClick={onClose} className={`${SIDEBAR_PRESS} flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden`} aria-label="Close navigation"><X className="size-4" /></button>
         </div>
 
         <nav className="mt-6 flex-1 overflow-y-auto">
@@ -348,7 +421,7 @@ function DashboardSidebar({
                       key={item.id}
                       type="button"
                       onClick={() => onNavigate(item.id)}
-                      className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition-colors ${active ? "bg-primary/11 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                      className={`${SIDEBAR_PRESS} sidebar-press-fill flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium ${active ? "bg-primary/11 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
                     >
                       <Icon className="size-[17px]" />
                       <span className="flex-1">{item.label}</span>
@@ -359,20 +432,27 @@ function DashboardSidebar({
               </div>
             </div>
           ))}
-          <button type="button" onClick={() => onNavigate("docs")} className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition-colors ${view === "docs" ? "bg-primary/11 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+          <button type="button" onClick={() => onNavigate("docs")} className={`${SIDEBAR_PRESS} sidebar-press-fill flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium ${view === "docs" ? "bg-primary/11 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
             <BookOpen className="size-[17px]" />
-            Getting started
+            <span>Getting started</span>
           </button>
         </nav>
 
         <div className="mt-4 border-t border-border pt-4">
-          <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-            <Avatar name={data.name} avatar={data.avatar} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{data.name || "GoPort developer"}</p>
-              <p className="truncate text-xs text-muted-foreground">{data.email}</p>
-            </div>
-            <button type="button" onClick={onLogout} className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Log out" title="Log out"><LogOut className="size-4" /></button>
+          <div className="flex items-center gap-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => onNavigate("profile")}
+              className={`${SIDEBAR_PRESS} sidebar-press-fill flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-secondary ${view === "profile" ? "bg-primary/11" : ""}`}
+              aria-label="Open profile"
+            >
+              <Avatar name={data.name} avatar={data.avatar} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{data.name || "GoPort developer"}</span>
+                <span className="block truncate text-xs text-muted-foreground">{data.email}</span>
+              </span>
+            </button>
+            <button type="button" onClick={onLogout} className={`${SIDEBAR_PRESS} flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground active:bg-secondary`} aria-label="Log out" title="Log out"><LogOut className="size-4" /></button>
           </div>
         </div>
       </aside>
@@ -427,23 +507,7 @@ function OverviewPanel({
             </div>
           ) : <CompactEmpty onCreate={onCreate} />}
         </section>
-
-        <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-6`}>
-          <div className="flex items-center gap-3"><span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><TerminalSquare className="size-4" /></span><h3 className="font-semibold">Quick command</h3></div>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground">Expose the app running on port 3000 with automatic HTTPS.</p>
-          <CopyCommand command="goport http 3000" className="mt-5" />
-          <button type="button" onClick={() => onNavigate("docs")} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">See setup guide <ArrowRight className="size-3.5" /></button>
-        </section>
       </div>
-
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <PanelHeader title="Request inspector" description="Request bodies stay on the machine running the GoPort CLI." action="Open inspector" onAction={() => onNavigate("inspector")} />
-        <div className="grid gap-px bg-border/70 md:grid-cols-3">
-          <InspectorCapability icon={FileText} title="See every request" text="Method, path, headers, body, status, and timing." />
-          <InspectorCapability icon={RotateCw} title="Replay in one click" text="Send the same request again after your code changes." />
-          <InspectorCapability icon={ShieldCheck} title="Local by design" text="Sensitive payloads remain in your local inspector." />
-        </div>
-      </section>
     </div>
   );
 }
@@ -627,18 +691,177 @@ function UsagePanel({ data }: { data: DashboardData }) {
   );
 }
 
-function BillingPanel() {
+function BillingPanel({ billing }: { billing?: BillingData }) {
+  const [cards, setCards] = useState<BillingCard[]>(billing?.cards ?? []);
+  const [subscription, setSubscription] = useState(billing?.subscription ?? null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const cardRemovalLocked = Boolean(subscription && subscription.status !== "canceled");
+  const canCancel = Boolean(subscription && !subscription.cancelAtPeriodEnd && subscription.status !== "canceled");
+  const nextAmount = subscription?.nextChargeAmountCents ?? subscription?.amountCents ?? 0;
+
+  const removeCard = (card: BillingCard) => {
+    if (cardRemovalLocked) return;
+    setCards((current) => current.filter((item) => item.id !== card.id));
+    setNotice(`${card.brand} ending in ${card.last4} was removed.`);
+  };
+
+  const acceptFreeMonth = () => {
+    setSubscription((current) => current ? { ...current, freeMonthOfferUsed: true, nextChargeAmountCents: 0 } : current);
+    setCancelOpen(false);
+    setNotice("Your next month is free. Your subscription remains active and you will not be charged for the next billing period.");
+  };
+
+  const scheduleCancellation = () => {
+    setSubscription((current) => current ? { ...current, cancelAtPeriodEnd: true } : current);
+    setCancelOpen(false);
+    setNotice(`Cancellation scheduled${subscription?.currentPeriodEnd ? ` for ${formatDate(subscription.currentPeriodEnd)}` : " for the end of this billing period"}.`);
+  };
+
   return (
     <div className="space-y-6">
-      <SectionLead title="Start free. Upgrade when traffic grows." description="Your account is on the Free plan. Paid subscriptions are being prepared; no payment method is required today." />
-      <section className="overflow-hidden rounded-[1.5rem] border border-[#29423f] bg-[#102124] p-6 text-white sm:p-8">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><div className="flex items-center gap-2 text-sm text-[#74dcb7]"><CircleDollarSign className="size-4" />Current plan</div><h3 className="mt-4 text-3xl font-semibold tracking-[-0.05em]">Free</h3><p className="mt-2 text-sm text-white/55">Automatic HTTPS, WebSockets, local inspection, and generated subdomains.</p></div><div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"><span className="text-white/45">Amount due</span><span className="ml-8 font-mono font-semibold">$0.00</span></div></div>
+      <SectionLead title="Billing, without surprises." description="Manage your plan and payment methods, then review every charge made to your account." />
+
+      {notice && (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-3 text-sm text-primary">
+          <span className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0" />{notice}</span>
+          <button type="button" onClick={() => setNotice(null)} className="cursor-pointer rounded-md p-1 hover:bg-primary/10" aria-label="Dismiss billing message"><X className="size-4" /></button>
+        </div>
+      )}
+
+      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+        <div className="flex flex-col justify-between gap-6 p-5 sm:flex-row sm:items-end sm:p-7">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium text-primary"><CircleDollarSign className="size-4" />Current plan</div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <h3 className="text-3xl font-semibold tracking-[-0.05em]">{subscription?.planName ?? "Free"}</h3>
+              {subscription?.cancelAtPeriodEnd ? <span className="rounded-full bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Cancellation scheduled</span> : subscription && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold capitalize text-primary">{subscription.status}</span>}
+            </div>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              {subscription
+                ? subscription.cancelAtPeriodEnd
+                  ? `Your access continues until ${subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : "the end of this billing period"}.`
+                  : `Renews ${subscription.currentPeriodEnd ? `on ${formatDate(subscription.currentPeriodEnd)}` : "at the end of the current billing period"}.`
+                : "You are using the Free plan. No payment method is required."}
+            </p>
+          </div>
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            <div className="rounded-xl border border-border bg-secondary/25 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">Next charge</span>
+              <span className="ml-8 font-mono font-semibold">{formatCurrency(nextAmount, subscription?.currency ?? "USD")}</span>
+            </div>
+            {canCancel && <Button type="button" variant="outline" onClick={() => setCancelOpen(true)} className="h-10 cursor-pointer rounded-xl border-border bg-transparent text-muted-foreground shadow-none hover:border-destructive/35 hover:bg-destructive/5 hover:text-destructive">Cancel subscription</Button>}
+          </div>
+        </div>
       </section>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <PlanCard name="Free" price="$0" description="For personal projects and local development." features={["2 active tunnels", "Generated subdomains", "Automatic HTTPS", "Local request inspector"]} current />
-        <PlanCard name="Pro" price="$2.99" suffix="/ month" description="For persistent integrations and heavier traffic." features={["More simultaneous tunnels", "Persistent subdomains", "Longer request history", "Request replay"]} />
+
+      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+        <PanelHeader title="Payment methods" description={`${cards.length} saved ${cards.length === 1 ? "card" : "cards"}`} />
+        {cards.length ? (
+          <div className="divide-y divide-border/70">
+            {cards.map((card) => (
+              <div key={card.id} className="flex items-center gap-4 p-5 sm:px-6">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/35 text-muted-foreground"><CreditCard className="size-4" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold capitalize">{card.brand} •••• {card.last4}</h4>{card.isDefault && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Default</span>}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">Expires {String(card.expiresMonth).padStart(2, "0")}/{String(card.expiresYear).slice(-2)}</p>
+                </div>
+                <button type="button" onClick={() => removeCard(card)} disabled={cardRemovalLocked} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-muted-foreground" aria-label={`Remove ${card.brand} ending in ${card.last4}`} title={cardRemovalLocked ? "Cancel your active subscription before removing a card" : "Remove card"}><Trash2 className="size-4" /></button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <BillingEmpty icon={CreditCard} title="No saved cards" description="A payment method will appear here after you subscribe to a paid plan." />
+        )}
+        {cardRemovalLocked && cards.length > 0 && <div className="flex items-start gap-2 border-t border-border/70 bg-secondary/20 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />Payment methods cannot be removed while a subscription is active.</div>}
+      </section>
+
+      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+        <PanelHeader title="Recent transactions" description="Your latest subscription charges and their payment methods." />
+        {billing?.transactions.length ? (
+          <div className="divide-y divide-border/70">
+            {billing.transactions.map((transaction) => (
+              <div key={transaction.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
+                <div className="min-w-0"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
+                <span className="w-fit rounded-lg border border-border bg-secondary/25 px-2.5 py-1.5 text-xs text-muted-foreground capitalize">{transaction.cardBrand} •••• {transaction.cardLast4}</span>
+                <div className="sm:min-w-28 sm:text-right"><p className="font-mono text-sm font-semibold">{formatCurrency(transaction.amountCents, transaction.currency)}</p><p className={`mt-1 text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{transaction.status}</p></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <BillingEmpty icon={FileText} title="No transactions yet" description="Successful charges will appear here with the card used for each payment." />
+        )}
+      </section>
+
+      {cancelOpen && subscription && (
+        <CancelSubscriptionDialog
+          subscription={subscription}
+          onClose={() => setCancelOpen(false)}
+          onAcceptOffer={acceptFreeMonth}
+          onCancel={scheduleCancellation}
+        />
+      )}
+    </div>
+  );
+}
+
+function BillingEmpty({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) {
+  return <div className="flex items-start gap-4 p-5 sm:p-6"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div><h4 className="text-sm font-semibold">{title}</h4><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{description}</p></div></div>;
+}
+
+function CancelSubscriptionDialog({ subscription, onClose, onAcceptOffer, onCancel }: { subscription: NonNullable<BillingData["subscription"]>; onClose: () => void; onAcceptOffer: () => void; onCancel: () => void }) {
+  const [step, setStep] = useState<"reason" | "offer">("reason");
+  const [reason, setReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const validReason = Boolean(reason && (reason !== "other" || customReason.trim().length >= 3));
+
+  const continueCancellation = () => {
+    if (!validReason) return;
+    if (subscription.freeMonthOfferUsed) onCancel();
+    else setStep("offer");
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-pointer bg-[#071012]/55 backdrop-blur-sm" aria-label="Close cancellation dialog" />
+      <div role="dialog" aria-modal="true" aria-labelledby="cancel-subscription-title" className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.4rem] border border-border bg-background p-5 shadow-2xl sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div><p className="text-sm font-medium text-destructive">Cancel subscription</p><h3 id="cancel-subscription-title" className="mt-1 text-xl font-semibold tracking-[-0.03em]">{step === "reason" ? "What made you decide to leave?" : "Before you go—take a month on us."}</h3></div>
+          <button type="button" onClick={onClose} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Close"><X className="size-4" /></button>
+        </div>
+
+        {step === "reason" ? (
+          <>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Your answer helps us improve GoPort. Choose the reason that best fits.</p>
+            <div className="mt-5 space-y-2" role="radiogroup" aria-label="Cancellation reason">
+              {CANCELLATION_REASONS.map((option) => (
+                <label key={option.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${reason === option.id ? "border-primary/45 bg-primary/[0.06] text-foreground" : "border-border hover:bg-secondary/45"}`}>
+                  <input type="radio" name="cancellation-reason" value={option.id} checked={reason === option.id} onChange={() => setReason(option.id)} className="mt-0.5 size-4 accent-[var(--primary)]" />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+            {reason === "other" && <textarea value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Tell us what we could do better" rows={3} className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3.5 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20" />}
+            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={onClose} className="h-10 cursor-pointer rounded-xl">Keep my subscription</Button>
+              <Button type="button" onClick={continueCancellation} disabled={!validReason} className="h-10 cursor-pointer rounded-xl bg-foreground text-background shadow-none hover:bg-foreground/90">Continue</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mt-6 rounded-[1.2rem] border border-primary/25 bg-primary/[0.06] p-5">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><CircleDollarSign className="size-5" /></span>
+              <h4 className="mt-5 text-lg font-semibold">Keep every Pro feature for one month—free.</h4>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">Your next bill will be {formatCurrency(0, subscription.currency)}. After the free month, your regular {formatCurrency(subscription.amountCents, subscription.currency)} / {subscription.interval} price resumes. This offer is available once per account.</p>
+            </div>
+            <div className="mt-6 space-y-2">
+              <Button type="button" onClick={onAcceptOffer} className="h-11 w-full cursor-pointer rounded-xl bg-primary text-primary-foreground shadow-none hover:bg-primary/90">Use my free month</Button>
+              <Button type="button" variant="ghost" onClick={onCancel} className="h-11 w-full cursor-pointer rounded-xl text-destructive hover:bg-destructive/8 hover:text-destructive">No thanks, cancel subscription</Button>
+            </div>
+            <button type="button" onClick={() => setStep("reason")} className="mt-4 w-full cursor-pointer text-center text-xs text-muted-foreground hover:text-foreground">Back to reason</button>
+          </>
+        )}
       </div>
-      <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-6`}><div className="flex items-start gap-4"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><FileText className="size-4" /></span><div><h3 className="font-semibold">Invoices and payment history</h3><p className="mt-1.5 text-sm text-muted-foreground">Nothing to show while your account is on the Free plan.</p></div></div></section>
     </div>
   );
 }
@@ -691,32 +914,353 @@ function TokenRow({ authToken, token, canDelete, onChange, onAuthError }: { auth
   );
 }
 
-function SettingsPanel({ data, onLogout }: { data: DashboardData; onLogout: () => void }) {
+function SettingsPanel({ authToken, data, onChange, onAuthError }: { authToken: string | null; data: DashboardData; onChange: () => Promise<void>; onAuthError: () => void }) {
   return (
     <div className="space-y-6">
-      <SectionLead title="A quiet place for account changes." description="Your authentication profile is managed by GoPort's secure user store." />
-      <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-7`}><div className="flex items-center gap-4"><Avatar name={data.name} avatar={data.avatar} large /><div><h3 className="font-semibold">{data.name || "GoPort developer"}</h3><p className="mt-1 text-sm text-muted-foreground">{data.email}</p></div></div><div className="mt-7 grid gap-5 border-t border-border pt-6 sm:grid-cols-2"><ReadOnlyField label="Display name" value={data.name || "Not set"} /><ReadOnlyField label="Email address" value={data.email} /></div><p className="mt-5 text-xs leading-5 text-muted-foreground">Profile editing will be available after account verification controls are added.</p></section>
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}><SettingsRow icon={LockKeyhole} title="Password" description="Reset your password securely from the login screen." action={<Link href="/login" className="text-sm font-medium text-primary hover:underline">Reset password</Link>} /><SettingsRow icon={Zap} title="Notifications" description="Product and traffic alerts are not enabled yet." action={<SoonBadge />} /><SettingsRow icon={LogOut} title="Sign out" description="Remove this session from the current browser." action={<button type="button" onClick={onLogout} className="text-sm font-medium text-foreground hover:text-primary">Log out</button>} /></section>
-      <section className="rounded-[1.4rem] border border-destructive/25 bg-destructive/5 p-5 sm:p-6"><h3 className="font-semibold text-destructive">Delete account</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Account deletion requires verified ownership and is not self-service yet. Contact support from your account email to request deletion.</p><a href="mailto:support@goport.uz?subject=Delete%20my%20GoPort%20account" className="mt-4 inline-flex text-sm font-medium text-destructive hover:underline">Contact support</a></section>
+      <SectionLead title="Your account." description="Keep your identity and sign-in details up to date." />
+      <section className={`${PANEL} mx-auto max-w-5xl overflow-hidden rounded-[1.4rem]`}>
+        <div className="p-5 sm:p-7">
+          <div className="flex items-center gap-4">
+            <ProfilePhotoEditor authToken={authToken} data={data} onChange={onChange} onAuthError={onAuthError} />
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-semibold">{data.name || "GoPort developer"}</h3>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{data.email}</p>
+            </div>
+            <p className="ml-auto hidden max-w-48 text-right text-xs leading-5 text-muted-foreground sm:block">Select the photo to replace it.</p>
+          </div>
+          <ProfileNameEditor authToken={authToken} name={data.name} onChange={onChange} onAuthError={onAuthError} />
+        </div>
+      </section>
+
+      <section className={`${PANEL} mx-auto max-w-5xl overflow-hidden rounded-[1.4rem]`}>
+        <div className="bg-secondary/15 px-5 py-3 sm:px-7">
+          <p className="text-xs font-semibold text-muted-foreground">Sign-in and security</p>
+        </div>
+        <ChangeEmailPanel authToken={authToken} currentEmail={data.email} onChange={onChange} onAuthError={onAuthError} />
+        <ChangePasswordPanel authToken={authToken} onChange={onChange} onAuthError={onAuthError} />
+      </section>
     </div>
   );
 }
 
-function DocsPanel() {
-  const frameworks = [
-    { name: "Next.js", command: "pnpm dev", port: "3000" },
-    { name: "Node.js", command: "npm run dev", port: "3000" },
-    { name: "Django", command: "python manage.py runserver", port: "8000" },
-    { name: "Laravel", command: "php artisan serve", port: "8000" },
-    { name: "Spring", command: "./mvnw spring-boot:run", port: "8080" },
-    { name: "Go", command: "go run .", port: "8080" },
-  ];
+function ProfileNameEditor({ authToken, name, onChange, onAuthError }: { authToken: string | null; name: string; onChange: () => Promise<void>; onAuthError: () => void }) {
+  const current = splitFullName(name);
+  const [firstName, setFirstName] = useState(current.firstName);
+  const [lastName, setLastName] = useState(current.lastName);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const next = splitFullName(name);
+    setFirstName(next.firstName);
+    setLastName(next.lastName);
+  }, [name]);
+
+  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+  const hasChanges = fullName !== name.trim();
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!authToken || loading) {
+      if (!authToken) onAuthError();
+      return;
+    }
+
+    setError(null);
+    setSaved(false);
+    setLoading(true);
+    try {
+      await updateProfileName(authToken, firstName, lastName);
+      updateStoredProfileName(fullName);
+      await onChange();
+      setSaved(true);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't update your name.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const editFirstName = (value: string) => { setFirstName(value); setSaved(false); };
+  const editLastName = (value: string) => { setLastName(value); setSaved(false); };
+
+  return (
+    <form onSubmit={submit} className="mt-7 max-w-2xl border-t border-border/80 pt-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="profile-first-name">First name</Label>
+          <Input id="profile-first-name" value={firstName} onChange={(event) => editFirstName(event.target.value)} autoComplete="given-name" maxLength={60} required className="h-10 rounded-xl bg-secondary/20" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="profile-last-name">Last name</Label>
+          <Input id="profile-last-name" value={lastName} onChange={(event) => editLastName(event.target.value)} autoComplete="family-name" maxLength={60} className="h-10 rounded-xl bg-secondary/20" />
+        </div>
+      </div>
+      <div className="mt-4 flex min-h-10 flex-wrap items-center gap-3">
+        <Button type="submit" disabled={!firstName.trim() || !hasChanges || loading} className="h-10 cursor-pointer rounded-xl bg-primary px-4 text-primary-foreground shadow-none disabled:pointer-events-auto disabled:cursor-not-allowed">
+          {loading && <Loader2 className="size-4 animate-spin" />}Save name
+        </Button>
+        {saved && <p className="inline-flex items-center gap-1.5 text-xs font-medium text-primary" role="status"><Check className="size-3.5" />Name updated</p>}
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+      </div>
+    </form>
+  );
+}
+
+function ChangeEmailPanel({ authToken, currentEmail, onChange, onAuthError }: { authToken: string | null; currentEmail: string; onChange: () => Promise<void>; onAuthError: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [otpId, setOtpId] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
+  const awaitingCode = Boolean(otpId);
+
+  const requestCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!authToken || loading) {
+      if (!authToken) onAuthError();
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await requestEmailChange(authToken, newEmail.trim());
+      setOtpId(response.otpId);
+      setCode("");
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't send the verification code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!authToken || code.length !== 6 || loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await confirmEmailChange(authToken, otpId, code);
+      updateStoredAuthSession(response.token, response.email);
+      await onChange();
+      setChanged(true);
+      setExpanded(false);
+      setOtpId("");
+      setCode("");
+      setNewEmail("");
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Invalid or expired code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const close = () => {
+    setExpanded(false);
+    setNewEmail("");
+    setOtpId("");
+    setCode("");
+    setError(null);
+  };
+
+  return (
+    <div className="border-t border-border/80 p-5 sm:px-7 sm:py-6">
+      <div className="flex items-center gap-3.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail className="size-4" /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold">Email address</h3>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{currentEmail}</p>
+        </div>
+        <Button type="button" variant="outline" onClick={() => expanded ? close() : setExpanded(true)} className="h-9 w-44 shrink-0 cursor-pointer justify-center rounded-xl px-3.5 shadow-none">
+          {expanded ? "Cancel" : "Change email"}{!expanded && <ChevronRight className="size-3.5" />}
+        </Button>
+      </div>
+
+      {changed && !expanded && <p className="mt-3 flex items-center gap-1.5 pl-[3.25rem] text-xs font-medium text-primary" role="status"><Check className="size-3.5" />Email updated</p>}
+
+      {expanded && awaitingCode ? (
+        <form onSubmit={confirmCode} className="ml-0 mt-5 max-w-xl border-t border-border/70 pt-5 sm:ml-[3.25rem]">
+          <div className="flex items-start gap-3">
+            <MailCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p className="text-sm leading-5 text-muted-foreground">Enter the six-digit code sent to <span className="font-medium text-foreground">{newEmail}</span>.</p>
+          </div>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <Label htmlFor="email-change-code">Verification code</Label>
+              <InputOTP id="email-change-code" maxLength={6} value={code} onChange={setCode}>
+                <InputOTPGroup className="gap-2">
+                  {Array.from({ length: 6 }, (_, index) => <InputOTPSlot key={index} index={index} className="size-10 rounded-md border-border bg-background first:rounded-md first:border last:rounded-md" />)}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => { setOtpId(""); setCode(""); setError(null); }} className="h-10 rounded-xl">Use another email</Button>
+              <Button type="submit" disabled={code.length !== 6 || loading} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-none">{loading && <Loader2 className="size-4 animate-spin" />}Verify email</Button>
+            </div>
+          </div>
+          {error && <p className="mt-3 text-sm text-destructive" role="alert">{error}</p>}
+        </form>
+      ) : expanded ? (
+        <form onSubmit={requestCode} className="ml-0 mt-5 max-w-xl border-t border-border/70 pt-5 sm:ml-[3.25rem]">
+          <div className="space-y-2">
+            <Label htmlFor="new-email">New email address</Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input id="new-email" type="email" value={newEmail} onChange={(event) => { setNewEmail(event.target.value); setChanged(false); }} placeholder="you@company.com" autoComplete="email" required className="h-10 rounded-xl bg-secondary/20" />
+              <Button type="submit" disabled={!/\S+@\S+\.\S+/.test(newEmail) || newEmail.trim().toLowerCase() === currentEmail.toLowerCase() || loading} className="h-10 shrink-0 rounded-xl bg-primary px-4 text-primary-foreground shadow-none">{loading && <Loader2 className="size-4 animate-spin" />}Send code</Button>
+            </div>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">We will verify the new address before replacing this one.</p>
+          {error && <p className="mt-3 text-sm text-destructive" role="alert">{error}</p>}
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function ChangePasswordPanel({ authToken, onChange, onAuthError }: { authToken: string | null; onChange: () => Promise<void>; onAuthError: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const matches = confirmPassword.length > 0 && newPassword === confirmPassword;
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!authToken || loading) {
+      if (!authToken) onAuthError();
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await changePassword(authToken, currentPassword, newPassword, confirmPassword);
+      updateStoredAuthSession(response.token);
+      await onChange();
+      setSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setExpanded(false);
+      setLoading(false);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't change your password.");
+      setLoading(false);
+    }
+  };
+
+  const close = () => {
+    setExpanded(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowPasswords(false);
+    setError(null);
+  };
+
+  return (
+    <div className="border-t border-border/80 p-5 sm:px-7 sm:py-6">
+      <div className="flex items-center gap-3.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><LockKeyhole className="size-4" /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold">Password</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Use 8+ characters with a letter and a number.</p>
+        </div>
+        <Button type="button" variant="outline" onClick={() => expanded ? close() : setExpanded(true)} className="h-9 w-44 shrink-0 cursor-pointer justify-center rounded-xl px-3.5 shadow-none">
+          {expanded ? "Cancel" : "Change password"}{!expanded && <ChevronRight className="size-3.5" />}
+        </Button>
+      </div>
+
+      {success && !expanded && <p className="mt-3 flex items-center gap-1.5 pl-[3.25rem] text-xs font-medium text-primary" role="status"><Check className="size-3.5" />Password updated</p>}
+
+      {expanded && (
+        <form onSubmit={submit} className="ml-0 mt-5 max-w-md space-y-4 border-t border-border/70 pt-5 sm:ml-[3.25rem]">
+          <div className="flex justify-end">
+            <button type="button" onClick={() => setShowPasswords((value) => !value)} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+              {showPasswords ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}{showPasswords ? "Hide passwords" : "Show passwords"}
+            </button>
+          </div>
+          <PasswordField id="current-password" label="Current password" value={currentPassword} onChange={setCurrentPassword} visible={showPasswords} autoComplete="current-password" />
+          <PasswordField id="new-password" label="New password" value={newPassword} onChange={setNewPassword} visible={showPasswords} autoComplete="new-password" />
+          <PasswordField id="confirm-password" label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} visible={showPasswords} autoComplete="new-password" />
+          {confirmPassword && !matches && <p className="text-sm text-destructive" role="alert">New passwords do not match.</p>}
+          {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+          <Button type="submit" disabled={!currentPassword || !isPasswordValid(newPassword) || !matches || loading} className="h-10 rounded-xl bg-primary px-4 text-primary-foreground shadow-none">{loading && <Loader2 className="size-4 animate-spin" />}Update password</Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function PasswordField({ id, label, value, onChange, visible, autoComplete }: { id: string; label: string; value: string; onChange: (value: string) => void; visible: boolean; autoComplete: string }) {
+  return <div className="space-y-2"><Label htmlFor={id}>{label}</Label><Input id={id} type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete} required className="h-11 rounded-xl bg-secondary/25" /></div>;
+}
+
+function DocsPanel({ tokens, onNavigate }: { tokens: TokenItem[]; onNavigate: (view: DashboardView) => void }) {
+  const selectedToken = tokens.find((token) => token.name.toLowerCase() === "default") ?? tokens[0];
+  const authCommand = selectedToken ? `goport auth ${selectedToken.token}` : "goport auth <token>";
+
   return (
     <div className="space-y-6">
-      <SectionLead title="From install to internet in three steps." description="Run these commands on the machine where your local service is listening." />
-      <div className="grid gap-5 lg:grid-cols-3"><SetupStep number="1" title="Install GoPort" command="choco install goport" text="Install the CLI and verify it is available in your terminal." /><SetupStep number="2" title="Authenticate" command="goport auth <token>" text="Create a token in this dashboard and link your machine." /><SetupStep number="3" title="Expose a port" command="goport http 3000" text="Receive a public HTTPS URL and open the local inspector." /></div>
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}><PanelHeader title="Framework examples" description="Start your application, then expose its usual development port." /><div className="grid md:grid-cols-2 xl:grid-cols-3">{frameworks.map((framework) => <div key={framework.name} className="border-b border-border/70 p-5 md:border-r xl:p-6"><div className="flex items-center justify-between"><h3 className="font-semibold">{framework.name}</h3><Code2 className="size-4 text-primary" /></div><code className="mt-4 block truncate rounded-lg bg-secondary px-3 py-2.5 font-mono text-xs">{framework.command}</code><CopyCommand className="mt-2" compact command={`goport http ${framework.port}`} /></div>)}</div></section>
-      <a href="https://github.com/muhammad-deve/GoPort#readme" target="_blank" rel="noreferrer" className="flex items-center justify-between gap-5 rounded-[1.4rem] border border-[#29423f] bg-[#102124] p-5 text-white hover:border-primary sm:p-7"><div className="flex items-center gap-4"><span className="flex size-11 items-center justify-center rounded-xl bg-white/7 text-[#38d996]"><BookOpen className="size-5" /></span><div><h3 className="font-semibold">Read the full documentation</h3><p className="mt-1 text-sm text-white/50">CLI flags, custom subdomains, regions, and self-hosting.</p></div></div><ArrowUpRight className="size-5 text-white/50" /></a>
+      <SectionLead
+        title="Start GoPort in three steps."
+        description="Download the CLI, authenticate this computer, then expose your local app."
+      />
+
+      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+        <ol className="divide-y divide-border/70">
+          <GuideStep
+            number="1"
+            title="Download GoPort"
+            description="Choose your operating system, then use the download button or copy the install command."
+          >
+            <InstallCommand />
+          </GuideStep>
+
+          <GuideStep
+            number="2"
+            title="Copy your token and authenticate"
+            description="Copy this command and run it in your terminal. You only need to do this once per computer."
+          >
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <KeyRound className="size-3.5 text-primary" />
+                {selectedToken ? `Using your ${selectedToken.name} token` : "No token exists yet"}
+              </p>
+              {!selectedToken && (
+                <button type="button" onClick={() => onNavigate("tokens")} className="w-fit text-xs font-semibold text-primary hover:underline">
+                  Create a token
+                </button>
+              )}
+            </div>
+            <AuthCommand command={authCommand} />
+          </GuideStep>
+
+          <GuideStep
+            number="3"
+            title="Start using GoPort"
+            description="Run this command while your local app is open."
+          >
+            <CopyCommand command="goport http 3000" />
+            <div className="mt-3 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.06] px-4 py-3">
+              <Globe2 className="mt-0.5 size-4 shrink-0 text-primary" />
+              <p className="text-xs leading-5 text-muted-foreground">
+                Replace <code className="font-mono text-foreground">3000 </code> with your app&apos;s port. GoPort will show your public URL in the terminal.
+              </p>
+            </div>
+          </GuideStep>
+        </ol>
+      </section>
     </div>
   );
 }
@@ -793,7 +1337,57 @@ function StatusPill({ online }: { online: boolean }) {
 function CopyCommand({ command, className = "", compact = false }: { command: string; className?: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => { if (await copyText(command)) { setCopied(true); window.setTimeout(() => setCopied(false), 1600); } };
-  return <div className={`${className} flex items-center gap-2 rounded-xl border border-border bg-[#102124] px-3.5 ${compact ? "py-2.5" : "py-3.5"} font-mono text-xs text-white`}><span className="text-[#38d996]">$</span><code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">{command}</code><button type="button" onClick={copy} className="text-white/50 hover:text-white" aria-label={`Copy ${command}`}>{copied ? <Check className="size-4 text-[#38d996]" /> : <Copy className="size-4" />}</button></div>;
+  return (
+    <div className={`${className} flex items-center gap-2 rounded-xl border border-border bg-white/85 px-3.5 ${compact ? "py-2.5" : "py-3.5"} font-mono text-xs text-foreground dark:border-[#29423f] dark:bg-[#102124] dark:text-white`}>
+      <span className="text-primary dark:text-[#38d996]">$</span>
+      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">{command}</code>
+      <button type="button" onClick={copy} className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-[color,background-color,transform] hover:bg-secondary hover:text-foreground active:scale-95 dark:text-white/50 dark:hover:bg-white/8 dark:hover:text-white" aria-label={`Copy ${command}`}>
+        {copied ? <Check className="size-4 text-primary dark:text-[#38d996]" /> : <Copy className="size-4" />}
+      </button>
+    </div>
+  );
+}
+
+function AuthCommand({ command }: { command: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const token = command.startsWith("goport auth ") ? command.slice("goport auth ".length) : "";
+  const hasToken = Boolean(token && token !== "<token>");
+  const visibleToken = hasToken ? (revealed ? token : maskToken(token)) : "<token>";
+
+  const copy = async () => {
+    if (await copyText(command)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-white/85 px-3.5 py-3.5 font-mono text-xs text-foreground dark:border-[#29423f] dark:bg-[#102124] dark:text-white">
+      <span className="text-primary dark:text-[#38d996]">$</span>
+      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap">
+        <span className="text-primary dark:text-[#73dfb8]">goport auth</span> <span>{visibleToken}</span>
+      </code>
+      {hasToken && (
+        <button
+          type="button"
+          onClick={() => setRevealed((value) => !value)}
+          className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-[color,background-color,transform] hover:bg-secondary hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-white/45 dark:hover:bg-white/8 dark:hover:text-white dark:focus-visible:ring-[#38d996]"
+          aria-label={revealed ? "Hide token" : "Show token"}
+        >
+          {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={copy}
+        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-[color,background-color,transform] hover:bg-secondary hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-white/45 dark:hover:bg-white/8 dark:hover:text-white dark:focus-visible:ring-[#38d996]"
+        aria-label="Copy authentication command"
+      >
+        {copied ? <Check className="size-4 text-primary dark:text-[#38d996]" /> : <Copy className="size-4" />}
+      </button>
+    </div>
+  );
 }
 
 function CopyTextAction({ label, value }: { label: string; value: string }) {
@@ -828,19 +1422,99 @@ function SettingsRow({ icon: Icon, title, description, action }: { icon: LucideI
   return <div className="flex items-center gap-4 border-b border-border/70 p-5 last:border-0 sm:px-6"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-xs text-muted-foreground">{description}</p></div>{action}</div>;
 }
 
-function SetupStep({ number, title, command, text }: { number: string; title: string; command: string; text: string }) {
-  return <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-6`}><span className="flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">{number}</span><h3 className="mt-5 font-semibold">{title}</h3><p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{text}</p><CopyCommand command={command} className="mt-5" compact /></section>;
+function GuideStep({ number, title, description, children }: { number: string; title: string; description: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="grid gap-5 px-5 py-6 sm:px-7 sm:py-7 md:grid-cols-[16rem_minmax(0,1fr)] lg:gap-9">
+      <div className="flex items-start gap-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-[0_0_0_5px_color-mix(in_srgb,var(--primary)_8%,transparent)]">{number}</span>
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="min-w-0 md:pt-0.5">{children}</div>
+    </li>
+  );
 }
 
 function DetailField({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-border bg-secondary/30 px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1.5 break-all font-mono text-xs font-medium">{value}</p></div>; }
-function ReadOnlyField({ label, value }: { label: string; value: string }) { return <div><p className="mb-2 text-xs font-medium text-muted-foreground">{label}</p><div className="rounded-xl border border-border bg-secondary/35 px-3.5 py-3 text-sm">{value}</div></div>; }
 function SoonBadge() { return <span className="rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-medium text-muted-foreground">Coming soon</span>; }
+
+function splitFullName(name: string): { firstName: string; lastName: string } {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function ProfilePhotoEditor({ authToken, data, onChange, onAuthError }: { authToken: string | null; data: DashboardData; onChange: () => Promise<void>; onAuthError: () => void }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  const selectPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!authToken) {
+      onAuthError();
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Choose a JPG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Choose an image smaller than 5 MB.");
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+    setPreview(nextPreview);
+    setError(null);
+    setUploading(true);
+    try {
+      await uploadProfilePhoto(authToken, file);
+      await onChange();
+      setPreview(null);
+    } catch (err) {
+      setPreview(null);
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't upload your profile picture.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="shrink-0">
+      <label
+        className={`group relative block size-14 rounded-full focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background ${uploading ? "cursor-wait" : "cursor-pointer"}`}
+        title="Change profile picture"
+      >
+        <Avatar name={data.name} avatar={preview ?? data.avatar} large />
+        <span className="absolute bottom-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-background/95 text-primary shadow-sm ring-1 ring-border transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+          {uploading ? <Loader2 className="size-3 animate-spin" /> : <Camera className="size-3" />}
+        </span>
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void selectPhoto(event)} disabled={uploading} className="sr-only" />
+      </label>
+      {error && <p className="mt-1 max-w-40 text-xs leading-4 text-destructive">{error}</p>}
+    </div>
+  );
+}
 
 function Avatar({ name, avatar, large = false }: { name: string; avatar?: string; large?: boolean }) {
   const initials = name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "GP";
   const size = large ? "size-14" : "size-9";
-  if (avatar) return <img src={avatar} alt="" className={`${size} rounded-xl border border-border object-cover`} referrerPolicy="no-referrer" />;
-  return <span className={`${size} flex shrink-0 items-center justify-center rounded-xl bg-[#102124] text-xs font-semibold text-white`}>{initials}</span>;
+  const src = avatar?.startsWith("/") ? `${API_BASE_URL}${avatar}` : avatar;
+  if (src) return <img src={src} alt={`${name || "GoPort"} profile`} className={`${size} shrink-0 rounded-full border border-border object-cover`} referrerPolicy="no-referrer" />;
+  return <span className={`${size} flex shrink-0 items-center justify-center rounded-full bg-[#102124] text-xs font-semibold text-white`}>{initials}</span>;
 }
 
 function DashboardLoading() {
@@ -854,5 +1528,6 @@ function DashboardError({ error, onRetry }: { error: string; onRetry: () => void
 function maskToken(token: string): string { return token ? `${token.slice(0, 7)}${"•".repeat(Math.max(token.length - 7, 10))}` : ""; }
 function formatNumber(value: number): string { return new Intl.NumberFormat("en-US").format(Math.max(value || 0, 0)); }
 function formatBytes(bytes: number): string { if (!bytes || bytes <= 0) return "0 B"; const units = ["B", "KB", "MB", "GB", "TB"]; const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1); const value = bytes / Math.pow(1024, index); return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`; }
+function formatCurrency(amountCents: number, currency: string): string { return new Intl.NumberFormat("en", { style: "currency", currency: currency.toUpperCase() }).format(amountCents / 100); }
 function formatDate(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? "Unknown" : new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date); }
 function formatRelative(value: string): string { const time = new Date(value).getTime(); if (Number.isNaN(time)) return "Unknown"; const seconds = Math.max(Math.round((Date.now() - time) / 1000), 0); if (seconds < 60) return "just now"; const minutes = Math.round(seconds / 60); if (minutes < 60) return `${minutes}m ago`; const hours = Math.round(minutes / 60); if (hours < 24) return `${hours}h ago`; const days = Math.round(hours / 24); if (days < 30) return `${days}d ago`; return formatDate(value); }

@@ -80,6 +80,39 @@ export function GoPortLogo({ className = "" }: GoPortLogoProps) {
   );
 }
 
+/** Theme-aware version of the compact "Go" artwork used by the favicon. */
+export function GoPortFavicon({ className = "" }: GoPortLogoProps) {
+  return (
+    <svg
+      viewBox="90 150 490 300"
+      aria-hidden="true"
+      focusable="false"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M218 174C162 174 118 218 118 274C118 330 162 374 218 374C258 374 292 352 308 320L308 274L230 274L230 306L272 306C260 326 240 338 218 338C182 338 154 310 154 274C154 238 182 210 218 210C236 210 252 218 262 230L290 204C272 186 246 174 218 174Z"
+        fill="currentColor"
+      />
+      <circle cx="450" cy="274" r="100" fill="currentColor" />
+      <circle cx="450" cy="274" r="62" fill="var(--card)" />
+      <circle cx="450" cy="274" r="46" fill="none" stroke="var(--primary)" strokeWidth="4" opacity="0.9" />
+      <circle cx="450" cy="274" r="28" fill="none" stroke="var(--primary)" strokeWidth="2.5" opacity="0.62" />
+      <circle cx="450" cy="274" r="10" fill="var(--primary)" />
+      <line x1="100" y1="420" x2="555" y2="420" stroke="var(--primary)" strokeWidth="3" opacity="0.55" />
+      <path
+        d="M548 414L562 420L548 426"
+        fill="none"
+        stroke="var(--primary)"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.85"
+      />
+    </svg>
+  );
+}
+
 interface GoPortMarkProps {
   className?: string;
 }

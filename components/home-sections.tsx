@@ -10,6 +10,7 @@ import {
   Server,
   TerminalSquare,
 } from "lucide-react";
+import { GoPortFavicon } from "@/components/goport-logo";
 import { Button } from "@/components/ui/button";
 import { InstallCommand } from "@/components/install-command";
 import { SectionHeader } from "@/components/section-header";
@@ -49,7 +50,7 @@ const INTEGRATIONS = [
 const PLANS = [
   { name: "Free", price: "$0", description: "Run a local project through public HTTPS at no cost.", billingNote: "No credit card required", items: ["Up to 2 active tunnels", "Random GoPort subdomain", "Automatic HTTPS", "WebSocket support", "Local request inspector", "Community support"], action: "Create free account" },
   { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Use every Pro feature without a yearly commitment.", billingNote: "Billed monthly. Cancel anytime.", items: ["Everything in Free", "More simultaneous tunnels", "Persistent GoPort subdomains", "Longer request history", "Higher traffic limits", "Request replay"], action: "Start 7-day free trial" },
-  { name: "Pro yearly", price: "$19.99", suffix: "/ year", description: "Keep Pro for a full year at the lowest monthly price.", billingNote: "Billed yearly. Cancel anytime. Save 44%.", items: ["Everything in Free", "More simultaneous tunnels", "Persistent GoPort subdomains", "Longer request history", "Higher traffic limits", "Request replay"], action: "Choose yearly", popular: true, badge: "Best value" },
+  { name: "Pro yearly", price: "$19.99", originalPrice: "$35.88", suffix: "/ year", description: "Keep Pro for a full year at the lowest monthly price.", billingNote: "Billed yearly. Cancel anytime. Save 44%.", items: ["Everything in Free", "More simultaneous tunnels", "Persistent GoPort subdomains", "Longer request history", "Higher traffic limits", "Request replay"], action: "Choose yearly", popular: true, badge: "Best value" },
 ];
 
 export function CompatibleServices() {
@@ -89,7 +90,9 @@ export function CompatibleServices() {
 
               <div className="min-w-0 rounded-xl border border-primary/30 bg-primary/[0.08] p-4">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-mono text-[10px] font-bold text-primary-foreground">GP</span>
+                  <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-card p-1 text-foreground shadow-sm">
+                    <GoPortFavicon className="size-full" />
+                  </span>
                   <span className="text-sm font-semibold text-foreground">Public GoPort URL</span>
                 </div>
                 <code className="mt-3 block truncate text-[11px] text-primary">checkout.goport.uz</code>
@@ -244,7 +247,15 @@ export function Pricing() {
             {plan.popular && <span className="absolute right-6 top-6 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{plan.badge}</span>}
             <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
             <p className="mt-3 max-w-[16rem] text-sm leading-6 text-muted-foreground">{plan.description}</p>
-            <div className="mt-8 flex items-end gap-1"><span className="text-5xl font-semibold tracking-[-0.05em] text-foreground">{plan.price}</span>{plan.suffix && <span className="mb-1 text-sm text-muted-foreground">{plan.suffix}</span>}</div>
+            <div className="relative mt-8 flex items-end gap-1">
+              {plan.originalPrice && (
+                <p className="absolute bottom-full left-0 mb-1 whitespace-nowrap text-sm text-muted-foreground">
+                  Regular price <s className="font-medium decoration-muted-foreground/80 decoration-2">{plan.originalPrice} / year</s>
+                </p>
+              )}
+              <span className="text-5xl font-semibold tracking-[-0.05em] text-foreground">{plan.price}</span>
+              {plan.suffix && <span className="mb-1 text-sm text-muted-foreground">{plan.suffix}</span>}
+            </div>
             <p className={`mt-4 inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-medium ${plan.popular ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>{plan.billingNote}</p>
             <ul className="my-7 space-y-3 border-y border-border py-6">
               {plan.items.map((item) => <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{item}</li>)}

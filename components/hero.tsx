@@ -35,7 +35,6 @@ export function Hero() {
             {["Automatic HTTPS", "WebSocket support", "Local request inspector"].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5"><Check className="size-3.5 text-primary" />{item}</span>
             ))}
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary"><Github className="size-3.5" />View source on GitHub</a>
           </div>
         </div>
 
