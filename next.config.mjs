@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  allowedDevOrigins: ["192.168.10.204"],
+  // Permit the public development tunnel so phones can load Next.js client
+  // resources (including hot reload) without cross-origin rejections.
+  allowedDevOrigins: ["task.goport.uz"],
   typescript: {
     ignoreBuildErrors: true,
   },

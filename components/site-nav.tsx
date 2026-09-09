@@ -9,12 +9,12 @@ import { GoPortLogo } from "@/components/goport-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#integrations", label: "Use cases" },
+  { href: "#features", label: "Features" },
+  { href: "#integrations", label: "Webhook testing" },
+  { href: "#use-cases", label: "Use cases" },
   { href: "#pricing", label: "Pricing" },
-  { href: "#docs", label: "Docs" },
   { href: "#quickstart", label: "Quickstart" },
-  { href: "#faq", label: "FAQ" },
+  { href: "#docs", label: "Docs" },
 ];
 
 export function SiteNav() {
@@ -30,7 +30,7 @@ export function SiteNav() {
 
   return (
     <header className={cn("fixed inset-x-0 top-0 z-50 border-b transition-[background-color,border-color] duration-300", scrolled ? "border-border/90 bg-background/90 backdrop-blur-xl" : "border-transparent bg-background/55 backdrop-blur-md")}>
-      <nav className="mx-auto flex h-[4.5rem] w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-7">
+      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-7">
         <Link href="/" className="flex shrink-0 items-center transition-opacity hover:opacity-70" aria-label="GoPort home">
           <GoPortLogo className="h-7 w-auto text-foreground" />
         </Link>

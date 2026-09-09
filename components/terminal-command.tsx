@@ -2,6 +2,7 @@
 
 import { Check, Copy, Terminal } from "lucide-react";
 import { useState } from "react";
+import { copyText } from "@/lib/clipboard";
 
 interface TerminalCommandProps {
   command: string;
@@ -11,11 +12,10 @@ export function TerminalCommand({ command }: TerminalCommandProps) {
   const [copied, setCopied] = useState(false);
 
   const copyCommand = async () => {
-    try {
-      await navigator.clipboard.writeText(command);
+    if (await copyText(command)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
-    } catch {
+    } else {
       setCopied(false);
     }
   };

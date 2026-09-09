@@ -3,7 +3,7 @@ import { Cloud, Terminal, Globe, MonitorSmartphone } from "lucide-react";
 export function TunnelDiagram() {
   return (
     <div aria-label="Anatomy of a secure GoPort tunnel" className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card/30 p-6 backdrop-blur sm:p-10">
-      <h3 className="mb-12 text-center text-sm font-medium text-foreground">Anatomy of a secure tunnel</h3>
+      <h3 className="mb-12 text-center text-sm font-medium text-foreground">How a GoPort localhost tunnel routes traffic</h3>
 
       {/* Animated flow */}
       <div className="flex flex-col items-stretch gap-3">
@@ -55,7 +55,7 @@ export function TunnelDiagram() {
       </div>
 
       <p className="mt-10 text-center font-mono text-xs text-muted-foreground/70">
-        Your machine becomes a server — instantly, no port forwarding required.
+        The CLI opens the connection from your machine. No inbound router port is required.
       </p>
     </div>
   );

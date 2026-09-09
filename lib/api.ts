@@ -241,6 +241,9 @@ export interface DashboardDomain {
   subdomain: string;
   url: string;
   isCustom: boolean;
+  isCurrent: boolean;
+  localPort?: string;
+  protocol?: string;
   requests: number;
   bytes: number;
   lastActive?: string;
@@ -321,6 +324,38 @@ export async function deleteToken(authToken: string, id: string): Promise<void> 
   }
   if (!res.ok) {
     throw new Error(await parseError(res, "Couldn't delete the token. Please try again."));
+  }
+}
+
+/** Disconnect an active CLI session for one of the authenticated user's tunnels. */
+export async function stopTunnel(authToken: string, subdomain: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tunnels/${encodeURIComponent(subdomain)}/stop`,
+    {
+      method: "POST",
+      headers: { Authorization: authToken },
+    },
+  );
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't stop the tunnel."));
+  }
+}
+
+/** Permanently remove an inactive tunnel and its aggregate traffic history. */
+export async function deleteTunnel(authToken: string, subdomain: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tunnels/${encodeURIComponent(subdomain)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: authToken },
+    },
+  );
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't delete the tunnel."));
   }
 }
 

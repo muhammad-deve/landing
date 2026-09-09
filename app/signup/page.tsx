@@ -4,15 +4,16 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = {
-  title: "Sign up — GoPort",
-  description: "Create your free GoPort account and expose localhost in seconds.",
+  title: "Create Account",
+  description: "Create a GoPort account, generate a CLI token, and open a public HTTPS tunnel to localhost.",
+  robots: { index: false, follow: false },
 };
 
 export default function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start free and create your first secure route in minutes."
+      subtitle="Create a free account, generate a CLI token, and open your first localhost tunnel."
       footer={
         <>
           Already have an account?{" "}

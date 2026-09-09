@@ -4,15 +4,16 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
-  title: "Log in — GoPort",
+  title: "Log in",
   description: "Log in to your GoPort account.",
+  robots: { index: false, follow: false },
 };
 
 export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Manage your tunnels, CLI tokens, and public domains."
+      subtitle="Manage CLI tokens, tunnel activity, request totals, and GoPort subdomains."
       footer={
         <>
           New to GoPort?{" "}

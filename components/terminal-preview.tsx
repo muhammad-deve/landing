@@ -71,7 +71,7 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
 
   return (
     <div className="terminal-surface w-full overflow-hidden rounded-[1.35rem] border border-primary/20 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.72)]">
-      <div className="flex items-center gap-2 border-b border-primary/15 bg-primary/[0.025] px-5 py-3.5">
+      <div className="flex items-center gap-2 border-b border-primary/15 bg-primary/[0.025] px-5 py-3">
         <div className="flex gap-1.5">
           <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
           <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
@@ -80,7 +80,7 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
         <span className="ml-2 font-mono text-xs text-muted-foreground">terminal</span>
       </div>
 
-      <div className="min-h-[22rem] overflow-x-auto p-6 text-left font-mono text-sm leading-relaxed sm:min-h-[25rem] sm:p-8">
+      <div className="min-h-[19rem] overflow-x-auto p-5 text-left font-mono text-[13px] leading-relaxed sm:min-h-[22rem] sm:p-6 sm:text-sm">
         <div className="flex">
           <span className="text-muted-foreground">$</span>
           <span className="ml-2 font-semibold text-foreground">{COMMAND.slice(0, commandLength)}</span>
@@ -108,7 +108,7 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
               </div>
             </div>
 
-            <div className="mt-8 min-w-[36rem]">
+            <div className="mt-6 min-w-[36rem]">
               <div className="font-semibold text-foreground">HTTP Requests</div>
               <div className="text-muted-foreground/80">-------------</div>
               <div className="mt-2 space-y-1 text-xs">

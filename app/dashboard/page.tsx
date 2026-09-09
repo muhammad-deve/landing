@@ -3,8 +3,9 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { PageBackground } from "@/components/page-background";
 
 export const metadata: Metadata = {
-  title: "Dashboard — GoPort",
-  description: "Your GoPort token, traffic stats, and domains.",
+  title: "Dashboard",
+  description: "Manage GoPort CLI tokens, tunnel activity, traffic totals, and subdomains.",
+  robots: { index: false, follow: false },
 };
 
 export default function DashboardPage() {

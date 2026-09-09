@@ -18,15 +18,14 @@ const FOOTER_LINKS = [
     links: [
       { label: "Docs", href: "#docs" },
       { label: "GitHub", href: GITHUB_URL, external: true },
-      { label: "Status", href: "mailto:hello@goport.uz?subject=GoPort%20status" },
+      { label: "MIT License", href: LICENSE_URL, external: true },
     ],
   },
   {
     title: "Company",
     links: [
       { label: "Contact", href: "mailto:hello@goport.uz" },
-      { label: "Privacy", href: "mailto:hello@goport.uz?subject=GoPort%20privacy" },
-      { label: "Terms", href: LICENSE_URL, external: true },
+      { label: "FAQ", href: "#faq" },
     ],
   },
 ];
@@ -38,9 +37,9 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2">
           <GoPortLogo className="h-6 w-auto text-foreground" />
           <p className="font-mono text-xs leading-relaxed text-muted-foreground">
-            Public URLs for local development.
+            Open-source localhost tunneling
             <br />
-            Open source and self-hostable.
+            for webhooks, APIs, and previews.
           </p>
         </div>
 

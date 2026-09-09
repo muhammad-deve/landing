@@ -16,19 +16,44 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GoPort - Expose localhost. Instantly.",
+  metadataBase: new URL("https://goport.uz"),
+  title: {
+    default: "GoPort: Expose Localhost to the Internet with HTTPS",
+    template: "%s | GoPort",
+  },
   description:
-    "Self-hosted tunneling tool for developers. Expose your local server to the internet with one command. Like ngrok, but self-hosted and open source.",
-  keywords: [
-    "localhost",
-    "tunnel",
-    "ngrok alternative",
-    "self-hosted",
-    "developer tools",
-    "port forwarding",
-    "goport",
-  ],
-  generator: "v0.app",
+    "Expose localhost to the internet with a public HTTPS URL. GoPort is an open-source, self-hostable tunnel for apps, APIs, webhooks, and demos.",
+  applicationName: "GoPort",
+  authors: [{ name: "GoPort" }],
+  creator: "GoPort",
+  publisher: "GoPort",
+  category: "developer tools",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "GoPort",
+    title: "GoPort: Expose Localhost to the Internet with HTTPS",
+    description:
+      "Create a public HTTPS URL for a local app, API, or webhook handler with one command.",
+  },
+  twitter: {
+    card: "summary",
+    title: "GoPort: Expose Localhost to the Internet with HTTPS",
+    description:
+      "Create a public HTTPS URL for a local app, API, or webhook handler with one command.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   icons: {
     icon: [
       {

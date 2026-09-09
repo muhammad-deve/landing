@@ -4,6 +4,7 @@ import { Check, Copy, Download } from "lucide-react";
 import { useState } from "react";
 import { AppleIcon, LinuxIcon, WindowsIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { copyText } from "@/lib/clipboard";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
@@ -38,31 +39,30 @@ export function InstallCommand() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const copy = async (id: string, command: string) => {
-    try {
-      await navigator.clipboard.writeText(command);
+    if (await copyText(command)) {
       setCopiedId(id);
       window.setTimeout(() => setCopiedId(null), 1600);
-    } catch {
+    } else {
       setCopiedId(null);
     }
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {PLATFORMS.map((platform) => {
         const Icon = platform.icon;
         const copied = copiedId === platform.id;
 
         return (
-          <div key={platform.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-stretch gap-3 rounded-2xl border border-border bg-card/75 p-3">
-            <Button asChild variant="outline" className="h-auto min-h-12 w-[13.5rem] justify-start rounded-xl border-border bg-background/75 px-4 text-foreground shadow-none hover:bg-secondary">
+          <div key={platform.id} className="grid gap-2 rounded-xl border border-border bg-card/75 p-2 sm:grid-cols-[12.75rem_minmax(0,1fr)] sm:items-center">
+            <Button asChild variant="outline" className="h-11 w-full justify-start rounded-lg border-border bg-background/75 px-3.5 text-foreground shadow-none hover:bg-secondary">
               <a href={platform.download} target="_blank" rel="noreferrer noopener">
                 <span className="inline-flex items-center gap-2"><Icon className="size-4" />Download {platform.label}</span>
-                <Download className="size-4 text-primary" />
+                <Download className="ml-auto size-4 text-primary" />
               </a>
             </Button>
 
-            <div className="flex min-h-12 min-w-0 items-start gap-3 rounded-xl border border-border bg-background/75 px-4 py-3 font-mono text-xs">
+            <div className="flex min-h-11 min-w-0 items-start gap-2.5 rounded-lg border border-border bg-background/75 px-3.5 py-2.5 font-mono text-[11px] sm:text-xs">
               <span className="select-none text-primary">{platform.prompt}</span>
               <code className="min-w-0 flex-1 break-all leading-5 text-foreground">{platform.command}</code>
               <button

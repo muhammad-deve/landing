@@ -15,11 +15,11 @@ type Scenario = {
 };
 
 const SCENARIOS: Scenario[] = [
-  { id: "webhook", label: "Webhook test", title: "Receive an event before you deploy", description: "Route a provider callback straight to a handler running on your machine.", event: "POST /payment.completed", endpoint: "/api/payment/webhook", source: "Payme event", icon: Webhook },
-  { id: "payment", label: "Payments", title: "Validate a payment flow locally", description: "Give payment providers a reachable callback URL while you work on the integration.", event: "POST /invoice.paid", endpoint: "/api/billing/callback", source: "Click callback", icon: CreditCard },
-  { id: "oauth", label: "OAuth", title: "Finish the redirect on localhost", description: "Use a public callback URL without standing up a staging environment.", event: "GET /auth/callback", endpoint: "/auth/callback", source: "OAuth provider", icon: KeyRound },
-  { id: "mobile", label: "Mobile", title: "Connect a device to your API", description: "Test a real device against the API currently running on your laptop.", event: "GET /v1/profile", endpoint: "/v1/profile", source: "iOS simulator", icon: Smartphone },
-  { id: "demo", label: "Client demo", title: "Share a working route", description: "Let a teammate or client see progress without a deployment handoff.", event: "GET /preview", endpoint: "/preview", source: "Browser visit", icon: Laptop },
+  { id: "webhook", label: "Webhook testing", title: "Inspect a real delivery on your machine", description: "Send provider callbacks to your local handler and debug the exact payload your application receives.", event: "POST /payment.completed", endpoint: "/api/payment/webhook", source: "Payme event", icon: Webhook },
+  { id: "payment", label: "Payment callbacks", title: "Test the full payment callback flow", description: "Give a payment provider a stable HTTPS endpoint while the integration still runs locally.", event: "POST /invoice.paid", endpoint: "/api/billing/callback", source: "Click callback", icon: CreditCard },
+  { id: "oauth", label: "OAuth redirects", title: "Use a valid public callback URL", description: "Complete an OAuth redirect on localhost without deploying a temporary staging build.", event: "GET /auth/callback", endpoint: "/auth/callback", source: "OAuth provider", icon: KeyRound },
+  { id: "mobile", label: "Mobile app testing", title: "Reach your local API from a device", description: "Connect a phone or emulator to the API running on your development machine.", event: "GET /v1/profile", endpoint: "/v1/profile", source: "Mobile app", icon: Smartphone },
+  { id: "demo", label: "Preview links", title: "Share current work without a deployment", description: "Send a temporary HTTPS link to a teammate or client while you keep the project local.", event: "GET /preview", endpoint: "/preview", source: "Browser visit", icon: Laptop },
 ];
 
 export function UseCaseWorkbench() {
@@ -31,7 +31,7 @@ export function UseCaseWorkbench() {
     <div className="route-surface overflow-hidden rounded-[1.5rem] border border-border">
       <div className="grid lg:grid-cols-[0.82fr_1.18fr]">
         <div className="border-b border-border p-4 lg:border-b-0 lg:border-r lg:p-5">
-          <p className="mb-3 px-2 text-sm font-medium text-muted-foreground">Choose a route</p>
+          <p className="mb-3 px-2 text-sm font-medium text-muted-foreground">Choose a workflow</p>
           <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
             {SCENARIOS.map((scenario) => {
               const ScenarioIcon = scenario.icon;
