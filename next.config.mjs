@@ -3,7 +3,7 @@ const nextConfig = {
   output: "standalone",
   // Permit the public development tunnel so phones can load Next.js client
   // resources (including hot reload) without cross-origin rejections.
-  allowedDevOrigins: ["task.goport.uz"],
+  allowedDevOrigins: ["task.goport.uz", "192.168.1.87", "*.goport.uz"],
   typescript: {
     ignoreBuildErrors: true,
   },
