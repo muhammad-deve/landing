@@ -9,12 +9,11 @@ import { GoPortLogo } from "@/components/goport-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
-  { href: "#features", label: "Features" },
-  { href: "#integrations", label: "Webhook testing" },
-  { href: "#use-cases", label: "Use cases" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#quickstart", label: "Quickstart" },
-  { href: "#docs", label: "Docs" },
+  { href: "/product", label: "Product" },
+  { href: "/use-cases", label: "Use cases" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/quickstart", label: "Quickstart" },
+  { href: "/docs", label: "Docs" },
 ];
 
 export function SiteNav() {
@@ -37,16 +36,16 @@ export function SiteNav() {
 
         <div className="hidden items-center gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"><Link href="/login">Log in</Link></Button>
-          <Button asChild className="h-9 rounded-full bg-primary px-4 text-primary-foreground shadow-none hover:bg-primary/90"><a href="#quickstart">Download</a></Button>
+          <Button asChild className="h-9 rounded-full bg-primary px-4 text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/quickstart">Download</Link></Button>
           <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label="Toggle navigation" className="flex size-9 items-center justify-center rounded-full border border-border bg-card/70 text-foreground lg:hidden">
             {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
@@ -57,9 +56,9 @@ export function SiteNav() {
         <div id="mobile-navigation" className="border-t border-border bg-background/95 px-5 py-5 backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-7xl gap-1">
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
+              <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
                 {link.label}
-              </a>
+              </Link>
             ))}
             <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary sm:hidden">Log in</Link>
           </div>

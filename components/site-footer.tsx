@@ -8,16 +8,16 @@ const FOOTER_LINKS = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "Use cases", href: "#use-cases" },
-      { label: "Quickstart", href: "#quickstart" },
+      { label: "Features", href: "/product" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Use cases", href: "/use-cases" },
+      { label: "Quickstart", href: "/quickstart" },
     ],
   },
   {
     title: "Developers",
     links: [
-      { label: "Documentation", href: "#docs" },
+      { label: "Documentation", href: "/docs" },
       { label: "Source code", href: GITHUB_URL, external: true },
       { label: "MIT license", href: LICENSE_URL, external: true },
     ],
@@ -25,7 +25,7 @@ const FOOTER_LINKS = [
   {
     title: "GoPort",
     links: [
-      { label: "FAQ", href: "#faq" },
+      { label: "FAQ", href: "/#faq" },
       { label: "Contact", href: "mailto:muhammadgo.deve@gmail.com" },
       { label: "Dashboard", href: "/dashboard" },
     ],
