@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Features } from "@/components/features";
 import { CompatibleServices, DocsOverview } from "@/components/home-sections";
-import { MarketingPage, SubpageHero } from "@/components/marketing-page";
+import { MarketingPage } from "@/components/marketing-page";
 
 export const metadata: Metadata = {
   title: "Product",
@@ -13,13 +13,6 @@ export const metadata: Metadata = {
 export default function ProductPage() {
   return (
     <MarketingPage>
-      <SubpageHero
-        section="product"
-        title="The shortest route from the internet to localhost."
-        description="Open a public HTTPS tunnel with one command, inspect the traffic beside your app, and keep the development loop on your machine."
-        command="$ goport http 3000"
-        output="https://project.goport.uz  →  http://localhost:3000"
-      />
       <Features />
       <CompatibleServices />
       <DocsOverview />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { GoPortLogo } from "@/components/goport-logo";
@@ -11,7 +11,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const NAV_LINKS = [
   { href: "/#integrations", label: "Webhook testing" },
   { href: "/#use-cases", label: "Use cases" },
-  { href: "/product", label: "Product" },
   { href: "/#quickstart", label: "Quickstart" },
   { href: "/#docs", label: "Docs" },
   { href: "/#pricing", label: "Pricing" },
@@ -21,6 +20,22 @@ const NAV_LINKS = [
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    setMenuOpen(false);
+
+    if (!href.startsWith("/#") || window.location.pathname !== "/") return;
+
+    const target = document.getElementById(href.slice(2));
+    if (!target) return;
+
+    event.preventDefault();
+    window.history.pushState(null, "", href.slice(1));
+    target.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  };
 
   useEffect(() => {
     const update = () => setScrolled(window.scrollY > 12);
@@ -38,7 +53,7 @@ export function SiteNav() {
 
         <div className="hidden items-center gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <Link key={link.href} href={link.href} onClick={(event) => handleNavClick(event, link.href)} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {link.label}
             </Link>
           ))}
@@ -58,7 +73,7 @@ export function SiteNav() {
         <div id="mobile-navigation" className="border-t border-border bg-background/95 px-5 py-5 backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-7xl gap-1">
             {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
+              <Link key={link.href} href={link.href} onClick={(event) => handleNavClick(event, link.href)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary">
                 {link.label}
               </Link>
             ))}

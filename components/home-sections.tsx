@@ -61,7 +61,7 @@ export function CompatibleServices() {
   ];
 
   return (
-    <section id="integrations" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
+    <section id="integrations" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
       <div className="grid gap-10 xl:grid-cols-[0.72fr_1.28fr] xl:items-center xl:gap-16">
         <SectionHeader
           eyebrow="Webhook testing"
@@ -183,7 +183,7 @@ export function CompatibleServices() {
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
+    <section id="use-cases" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
       <div className="grid gap-10 lg:grid-cols-[0.65fr_1.35fr] lg:items-start">
         <SectionHeader eyebrow="Use cases" title="A public URL for work that still runs locally." description="See how a localhost tunnel fits into webhook development, payment testing, OAuth, mobile apps, and client reviews." align="left" />
         <UseCaseWorkbench />
@@ -194,7 +194,7 @@ export function UseCases() {
 
 export function Quickstart() {
   return (
-    <section id="quickstart" className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-7 lg:py-20">
+    <section id="quickstart" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-16 sm:px-7 lg:py-20">
       <SectionHeader eyebrow="Get started" title="Open your first localhost tunnel." description="Install the CLI, authenticate once, and point GoPort at the port your application already uses." />
 
       <div className="mt-10 overflow-hidden rounded-[1.5rem] border border-border bg-card/60 shadow-[0_30px_90px_-60px_rgba(8,17,19,0.5)]">
@@ -240,7 +240,7 @@ export function Quickstart() {
 
 export function DocsOverview() {
   return (
-    <section id="docs" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
+    <section id="docs" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-center lg:gap-16">
         <SectionHeader eyebrow="How it works" title="Follow every hop from the public URL to localhost." description="A request reaches GoPort, travels through the CLI's outbound tunnel, and arrives at the local port where your application is listening." align="left" />
         <a
@@ -266,7 +266,7 @@ export function DocsOverview() {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
+    <section id="pricing" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
       <SectionHeader eyebrow="Pricing" title="Start free. Upgrade when the work demands it." description="Use the Free plan for local development, or choose monthly or yearly Pro. Cancel any paid plan at any time." />
       <div className="mt-14 grid gap-4 lg:grid-cols-3">
         {PLANS.map((plan) => (
