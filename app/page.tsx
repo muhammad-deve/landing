@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AuthRedirect } from "@/components/auth-redirect";
 import { Faq, FAQS } from "@/components/faq";
-import { Features } from "@/components/features";
 import { CompatibleServices, DocsOverview, Pricing, Quickstart, UseCases } from "@/components/home-sections";
 import { Hero } from "@/components/hero";
 import { PageBackground } from "@/components/page-background";
@@ -63,7 +62,6 @@ export default function Home() {
       <main className="relative z-10 flex-1">
         <Hero />
         <CompatibleServices />
-        <Features />
         <UseCases />
         <Quickstart />
         <DocsOverview />

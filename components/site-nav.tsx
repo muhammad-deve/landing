@@ -9,12 +9,13 @@ import { GoPortLogo } from "@/components/goport-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
-  { href: "/#features", label: "Features" },
   { href: "/#integrations", label: "Webhook testing" },
   { href: "/#use-cases", label: "Use cases" },
-  { href: "/#pricing", label: "Pricing" },
+  { href: "/product", label: "Product" },
   { href: "/#quickstart", label: "Quickstart" },
   { href: "/#docs", label: "Docs" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function SiteNav() {

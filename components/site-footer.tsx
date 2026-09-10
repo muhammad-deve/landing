@@ -8,7 +8,7 @@ const FOOTER_LINKS = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "/#features" },
+      { label: "Product overview", href: "/product" },
       { label: "Pricing", href: "/#pricing" },
       { label: "Use cases", href: "/#use-cases" },
       { label: "Quickstart", href: "/#quickstart" },

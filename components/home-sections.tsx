@@ -62,10 +62,10 @@ export function CompatibleServices() {
 
   return (
     <section id="integrations" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:gap-16">
+      <div className="grid gap-10 xl:grid-cols-[0.72fr_1.28fr] xl:items-center xl:gap-16">
         <SectionHeader
           eyebrow="Webhook testing"
-          title="Debug real webhooks on localhost."
+          title="Debug production webhooks on localhost instantly."
           description="Use a GoPort URL as the provider endpoint. Deliveries reach your local handler, and the built-in inspector records each request and response for replay."
           align="left"
         />
@@ -77,41 +77,68 @@ export function CompatibleServices() {
           </div>
 
           <div className="p-5 sm:p-6">
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-stretch">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.08fr)_2.5rem_minmax(0,1.24fr)_2.5rem_minmax(0,1fr)] lg:items-stretch lg:gap-2">
               <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-white p-1.5"><img src="https://cdn.simpleicons.org/stripe/635BFF" alt="" width={20} height={20} className="size-full" /></span>
-                  <span className="text-sm font-semibold text-foreground">Stripe event</span>
+                  <span className="min-w-0">
+                    <span className="block text-[11px] leading-none text-muted-foreground">Provider</span>
+                    <span className="mt-1 block text-sm font-semibold text-foreground">Stripe</span>
+                  </span>
                 </div>
-                <code className="mt-3 block truncate text-[11px] text-muted-foreground">checkout.session.completed</code>
+                <code className="mt-3 block whitespace-nowrap text-[11px] text-muted-foreground" title="check.session.completed">
+                  check.session.completed
+                </code>
               </div>
 
-              <ArrowRight className="mx-auto size-4 rotate-90 self-center text-primary sm:rotate-0" />
+              <div className="flex items-center justify-center gap-2 py-0.5 text-primary lg:flex-col lg:gap-1 lg:py-0">
+                <span className="font-mono text-[10px] font-semibold">POST</span>
+                <ArrowRight className="size-4 rotate-90 lg:rotate-0" />
+              </div>
 
-              <div className="min-w-0 rounded-xl border border-primary/30 bg-primary/[0.08] p-4">
+              <div className="min-w-0 rounded-xl border border-primary/35 bg-primary/[0.09] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-card p-1 text-foreground shadow-sm">
                     <GoPortFavicon className="size-full" />
                   </span>
-                  <span className="text-sm font-semibold text-foreground">Public GoPort URL</span>
+                  <span className="min-w-0">
+                    <span className="block text-[11px] leading-none text-primary">Public endpoint</span>
+                    <span className="mt-1 block text-sm font-semibold text-foreground">GoPort tunnel</span>
+                  </span>
                 </div>
-                <code className="mt-3 block truncate text-[11px] text-primary">checkout.goport.uz</code>
+                <code className="mt-3 flex min-w-0 items-baseline whitespace-nowrap text-[11px]" aria-label="check.goport.uz/stripe">
+                  <span className="text-muted-foreground">check.goport.uz</span>
+                  <span className="shrink-0 font-semibold text-primary">/stripe</span>
+                </code>
               </div>
 
-              <ArrowRight className="mx-auto size-4 rotate-90 self-center text-primary sm:rotate-0" />
+              <div className="flex items-center justify-center gap-2 py-0.5 text-primary lg:flex-col lg:gap-1 lg:py-0">
+                <span className="text-[10px] font-medium text-muted-foreground">forwards</span>
+                <ArrowRight className="size-4 rotate-90 lg:rotate-0" />
+              </div>
 
               <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-card"><Server className="size-4 text-foreground" /></span>
-                  <span className="text-sm font-semibold text-foreground">Local endpoint</span>
+                  <span className="min-w-0">
+                    <span className="block text-[11px] leading-none text-muted-foreground">Local handler</span>
+                    <span className="mt-1 block text-sm font-semibold text-foreground">Your app</span>
+                  </span>
                 </div>
-                <code className="mt-3 block truncate text-[11px] text-muted-foreground">localhost:3000/webhooks</code>
+                <code className="mt-3 block whitespace-nowrap text-[11px]" aria-label="localhost:8080/stripe" title="localhost:8080/stripe">
+                  <span className="text-muted-foreground">localhost:8080</span>
+                  <span className="font-semibold text-foreground">/stripe</span>
+                </code>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-background/55 px-4 py-3 font-mono text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">POST /api/webhooks/stripe</span>
-              <span>captured locally</span>
+              <span className="font-semibold text-foreground">POST checkout.session.completed</span>
+              <span className="inline-flex items-center gap-1.5">
+                <span>
+                  <span className="text-primary">✓</span> delivered to <span className="font-semibold text-foreground">localhost:8080/stripe</span>
+                </span>
+              </span>
               <span className="ml-auto text-primary">48 ms</span>
             </div>
           </div>
