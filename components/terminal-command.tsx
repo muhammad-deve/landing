@@ -21,8 +21,8 @@ export function TerminalCommand({ command }: TerminalCommandProps) {
   };
 
   return (
-    <div className="mt-7">
-      <p className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="mt-6">
+      <p className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
         <Terminal className="size-3.5" />
         Run this in your terminal
       </p>
