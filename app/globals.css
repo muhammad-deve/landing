@@ -91,6 +91,36 @@
   html { scroll-behavior: smooth; }
   body { @apply bg-background text-foreground; min-width: 320px; }
   ::selection { background: color-mix(in srgb, var(--primary) 28%, transparent); }
+
+  /*
+   * Tailwind v4 removed the Preflight rule that gave buttons a pointer cursor.
+   * Restore it for anything clickable so the hand cursor shows everywhere,
+   * including the dashboard. Disabled controls keep the default cursor, and
+   * utilities such as `cursor-wait` still win because they live in a later layer.
+   */
+  button:not(:disabled):not([aria-disabled='true']),
+  summary,
+  label[for],
+  [role='button']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  [role='menuitem']:not([aria-disabled='true']),
+  [role='menuitemcheckbox']:not([aria-disabled='true']),
+  [role='menuitemradio']:not([aria-disabled='true']),
+  [role='option']:not([aria-disabled='true']),
+  [role='switch']:not([aria-disabled='true']),
+  [role='checkbox']:not([aria-disabled='true']),
+  [role='radio']:not([aria-disabled='true']),
+  select:not(:disabled),
+  input[type='button']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='reset']:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='color']:not(:disabled),
+  input[type='range']:not(:disabled),
+  input[type='file']:not(:disabled)::file-selector-button {
+    cursor: pointer;
+  }
 }
 
 .site-grid {
