@@ -161,6 +161,7 @@ export function DashboardClient() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DashboardDomain | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [pendingTunnelAction, setPendingTunnelAction] = useState<{ action: "stop" | "delete"; domain: DashboardDomain } | null>(null);
 
   const handleAuthError = useCallback(() => {
     clearAuthSession();
@@ -238,13 +239,14 @@ export function DashboardClient() {
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
+  const requestTunnelAction = (action: "stop" | "delete", domain: DashboardDomain) => {
+    if (!authToken || busyAction) return;
+    setPendingTunnelAction({ action, domain });
+  };
+
   const runTunnelAction = async (action: "stop" | "delete", domain: DashboardDomain) => {
     if (!authToken || busyAction) return;
-    const question = action === "stop"
-      ? `Stop ${domain.subdomain}.goport.uz? The local CLI session will disconnect.`
-      : `Delete ${domain.subdomain}.goport.uz and its traffic history?`;
-    if (!window.confirm(question)) return;
-
+    setPendingTunnelAction(null);
     setActionError(null);
     setBusyAction(`${action}:${domain.subdomain}`);
     try {
@@ -332,7 +334,7 @@ export function DashboardClient() {
               onCreate={() => setCreateOpen(true)}
               onNavigate={navigate}
               onSelectDomain={setSelectedDomain}
-              onStop={(domain) => void runTunnelAction("stop", domain)}
+              onStop={(domain) => requestTunnelAction("stop", domain)}
               busyAction={busyAction}
             />
           )}
@@ -341,8 +343,8 @@ export function DashboardClient() {
               domains={data.domains}
               onCreate={() => setCreateOpen(true)}
               onSelect={setSelectedDomain}
-              onStop={(domain) => void runTunnelAction("stop", domain)}
-              onDelete={(domain) => void runTunnelAction("delete", domain)}
+              onStop={(domain) => requestTunnelAction("stop", domain)}
+              onDelete={(domain) => requestTunnelAction("delete", domain)}
               busyAction={busyAction}
             />
           )}
@@ -373,8 +375,24 @@ export function DashboardClient() {
           domain={selectedDomain}
           busyAction={busyAction}
           onClose={() => setSelectedDomain(null)}
-          onStop={() => void runTunnelAction("stop", selectedDomain)}
-          onDelete={() => void runTunnelAction("delete", selectedDomain)}
+          onStop={() => requestTunnelAction("stop", selectedDomain)}
+          onDelete={() => requestTunnelAction("delete", selectedDomain)}
+        />
+      )}
+      {pendingTunnelAction && (
+        <ConfirmDialog
+          tone={pendingTunnelAction.action === "delete" ? "danger" : "neutral"}
+          icon={pendingTunnelAction.action === "delete" ? Trash2 : Square}
+          title={pendingTunnelAction.action === "delete" ? "Delete this tunnel?" : "Stop this tunnel?"}
+          description={
+            pendingTunnelAction.action === "delete"
+              ? `${pendingTunnelAction.domain.subdomain}.goport.uz and its traffic history will be removed. This can't be undone.`
+              : `${pendingTunnelAction.domain.subdomain}.goport.uz will go offline and the local CLI session will disconnect.`
+          }
+          confirmLabel={pendingTunnelAction.action === "delete" ? "Delete tunnel" : "Stop tunnel"}
+          busy={busyAction === `${pendingTunnelAction.action}:${pendingTunnelAction.domain.subdomain}`}
+          onConfirm={() => void runTunnelAction(pendingTunnelAction.action, pendingTunnelAction.domain)}
+          onCancel={() => setPendingTunnelAction(null)}
         />
       )}
     </div>
@@ -1058,12 +1076,12 @@ function TokensPanel({ authToken, tokens, onChange, onAuthError }: { authToken: 
   return (
     <div className="space-y-6">
       <SectionLead title="Keys for every trusted machine." description="Create a separate token for your laptop, CI runner, or server so access can be revoked independently." />
-      <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-7`}>
-        <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><KeyRound className="size-4" /></span><div><h3 className="font-semibold">Create CLI token</h3><p className="mt-0.5 text-xs text-muted-foreground">The token value is used by `goport auth`.</p></div></div>
-        <form onSubmit={create} className="mt-6 flex flex-col gap-2 sm:flex-row"><Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Token name, e.g. work-laptop" maxLength={50} className="h-11 rounded-xl bg-background" /><Button type="submit" disabled={creating || !name.trim()} className="h-11 rounded-xl bg-primary text-primary-foreground shadow-none">{creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}Create token</Button></form>
-        {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
-      </section>
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}><PanelHeader title="Your tokens" description={`${tokens.length} active ${tokens.length === 1 ? "credential" : "credentials"}`} />
+      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+        <div className="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+          <div className="min-w-0"><h3 className="text-sm font-semibold">Your tokens</h3><p className="mt-1 text-xs text-muted-foreground">{tokens.length} active {tokens.length === 1 ? "credential" : "credentials"}</p></div>
+          <form onSubmit={create} className="flex items-center gap-2 sm:shrink-0"><Input value={name} onChange={(event) => setName(event.target.value)} placeholder="New token name" maxLength={50} aria-label="New token name" className="h-9 min-w-0 rounded-lg bg-background text-xs sm:w-48" /><Button type="submit" disabled={creating || !name.trim()} className="h-9 shrink-0 gap-1.5 rounded-lg bg-primary px-3 text-xs text-primary-foreground shadow-none">{creating ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}Create token</Button></form>
+        </div>
+        {error && <p className="border-b border-border/70 px-5 py-3 text-sm text-destructive sm:px-6">{error}</p>}
         <div className="divide-y divide-border/70">{tokens.map((token) => <TokenRow key={token.id} authToken={authToken} token={token} canDelete={tokens.length > 1} onChange={onChange} onAuthError={onAuthError} />)}</div>
       </section>
       <section className="rounded-[1.4rem] border border-amber-500/25 bg-amber-500/7 p-5"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" /><p className="text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">Treat tokens like passwords.</span> Never commit them to source control or paste them into client-side code.</p></div></section>
@@ -1075,18 +1093,35 @@ function TokenRow({ authToken, token, canDelete, onChange, onAuthError }: { auth
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
   const command = `goport auth ${token.token}`;
   const copy = async () => { if (await copyText(command)) { setCopied(true); window.setTimeout(() => setCopied(false), 1600); } };
   const remove = async () => {
-    if (!authToken || deleting || !canDelete || !window.confirm(`Revoke the "${token.name}" token?`)) return;
+    if (!authToken || deleting || !canDelete) return;
     setDeleting(true);
-    try { await deleteToken(authToken, token.id); onChange(); }
-    catch (err) { if (err instanceof UnauthorizedError) onAuthError(); else setDeleting(false); }
+    try { await deleteToken(authToken, token.id); setConfirmingRemoval(false); onChange(); }
+    catch (err) { setConfirmingRemoval(false); if (err instanceof UnauthorizedError) onAuthError(); else setDeleting(false); }
   };
   return (
-    <div className="p-5 sm:px-6">
-      <div className="flex items-start justify-between gap-4"><div><div className="flex items-center gap-2"><h4 className="text-sm font-semibold">{token.name}</h4>{token.name === "default" && <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Default</span>}</div><p className="mt-1.5 text-xs text-muted-foreground">Created {token.created ? formatDate(token.created) : "with your account"} · Last used not tracked yet</p></div><button type="button" onClick={remove} disabled={!canDelete || deleting} className="flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-35" title={canDelete ? "Revoke token" : "Keep at least one token"}>{deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}</button></div>
-      <div className="mt-4 flex items-center gap-2 overflow-hidden rounded-xl border border-border bg-[#102124] px-3.5 py-3 font-mono text-xs text-white"><span className="text-[#38d996]">$</span><code className="min-w-0 flex-1 truncate"><span className="text-[#73dfb8]">goport auth</span> <span className="text-white/70">{revealed ? token.token : maskToken(token.token)}</span></code><button type="button" onClick={() => setRevealed((value) => !value)} className="text-white/45 hover:text-white" aria-label={revealed ? "Hide token" : "Show token"}>{revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button><button type="button" onClick={copy} className="text-white/45 hover:text-white" aria-label="Copy authentication command">{copied ? <Check className="size-4 text-[#38d996]" /> : <Copy className="size-4" />}</button></div>
+    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2"><h4 className="truncate text-sm font-semibold">{token.name}</h4>{token.name === "default" && <span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Default</span>}</div>
+        <p className="mt-1 truncate text-xs text-muted-foreground">Created {token.created ? formatDate(token.created) : "with your account"} · Last used not tracked yet</p>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
+        <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-[#102124] px-3 py-2 font-mono text-xs text-white"><span className="shrink-0 text-[#38d996]">$</span><code className="min-w-0 truncate"><span className="text-[#73dfb8]">goport auth</span> <span className="text-white/70">{revealed ? token.token : maskToken(token.token)}</span></code><button type="button" onClick={() => setRevealed((value) => !value)} className="shrink-0 text-white/45 hover:text-white" aria-label={revealed ? "Hide token" : "Show token"}>{revealed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button><button type="button" onClick={copy} className="shrink-0 text-white/45 hover:text-white" aria-label="Copy authentication command">{copied ? <Check className="size-3.5 text-[#38d996]" /> : <Copy className="size-3.5" />}</button></div>
+        <button type="button" onClick={() => setConfirmingRemoval(true)} disabled={!canDelete || deleting} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-35" title={canDelete ? "Revoke token" : "Keep at least one token"}>{deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button>
+      </div>
+      {confirmingRemoval && (
+        <ConfirmDialog
+          title="Revoke this token?"
+          description={`Any machine authenticated with "${token.name}" will stop being able to open tunnels. This can't be undone.`}
+          confirmLabel="Revoke token"
+          busy={deleting}
+          onConfirm={() => void remove()}
+          onCancel={() => setConfirmingRemoval(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1476,6 +1511,38 @@ function TunnelDetailsDialog({ domain, busyAction, onClose, onStop, onDelete }: 
         <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between"><CopyTextAction label="Regenerate address command" value={reset} /><div className="flex gap-2">{domain.isCurrent ? <Button type="button" variant="outline" onClick={onStop} disabled={busyAction === `stop:${domain.subdomain}`} className="h-10 rounded-xl">{busyAction === `stop:${domain.subdomain}` ? <Loader2 className="size-4 animate-spin" /> : <Square className="size-3.5 fill-current" />}Stop tunnel</Button> : <Button type="button" variant="outline" onClick={onDelete} disabled={busyAction === `delete:${domain.subdomain}`} className="h-10 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/8">{busyAction === `delete:${domain.subdomain}` ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}Delete tunnel</Button>}<Button type="button" onClick={onClose} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-none">Done</Button></div></div>
       </div>
     </ModalShell>
+  );
+}
+
+// Replaces window.confirm for destructive dashboard actions so the prompt is
+// centred, themed, and dismissable with Escape. Sits above ModalShell (z-100)
+// because it can be raised from inside the tunnel details dialog.
+function ConfirmDialog({ title, description, confirmLabel, cancelLabel = "Cancel", tone = "danger", icon: Icon = Trash2, busy = false, onConfirm, onCancel }: { title: string; description: string; confirmLabel: string; cancelLabel?: string; tone?: "danger" | "neutral"; icon?: LucideIcon; busy?: boolean; onConfirm: () => void; onCancel: () => void }) {
+  const danger = tone === "danger";
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) onCancel();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [busy, onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <button type="button" onClick={() => { if (!busy) onCancel(); }} className="absolute inset-0 cursor-pointer bg-[#071012]/55 backdrop-blur-sm" aria-label="Dismiss dialog" />
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description" className="relative z-10 w-full max-w-md rounded-[1.4rem] border border-border bg-background p-5 shadow-2xl sm:p-6">
+        <div className="flex flex-col items-center text-center">
+          <span className={`flex size-11 items-center justify-center rounded-2xl ${danger ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}><Icon className="size-5" /></span>
+          <h3 id="confirm-dialog-title" className="mt-4 text-base font-semibold tracking-[-0.02em]">{title}</h3>
+          <p id="confirm-dialog-description" className="mt-2 text-sm leading-6 text-pretty text-muted-foreground">{description}</p>
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={busy} className="h-10 rounded-xl sm:min-w-[8.5rem]">{cancelLabel}</Button>
+          <Button type="button" autoFocus onClick={onConfirm} disabled={busy} className={`h-10 rounded-xl shadow-none sm:min-w-[8.5rem] ${danger ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>{busy && <Loader2 className="size-4 animate-spin" />}{confirmLabel}</Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
