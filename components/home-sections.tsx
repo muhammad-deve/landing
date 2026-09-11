@@ -184,7 +184,7 @@ export function CompatibleServices() {
 export function UseCases() {
   return (
     <section id="use-cases" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
-      <div className="grid gap-10 lg:grid-cols-[0.65fr_1.35fr] lg:items-start">
+      <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-start">
         <SectionHeader eyebrow="Use cases" title="A public URL for work that still runs locally." description="See how a localhost tunnel fits into webhook development, payment testing, OAuth, mobile apps, and client reviews." align="left" />
         <UseCaseWorkbench />
       </div>
