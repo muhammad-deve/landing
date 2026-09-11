@@ -229,7 +229,7 @@ export function Quickstart() {
           <li className="p-6 sm:p-8">
             <div className="flex items-center justify-between"><span className="font-mono text-sm text-primary">04</span><TerminalSquare className="size-5 text-muted-foreground" /></div>
             <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Expose your local port</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground lg:min-h-[4.5rem]">Run the command with your app's port. GoPort prints the public HTTPS URL when the tunnel is ready.</p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground lg:min-h-[4.5rem]">Run the command with your app&apos;s port. GoPort prints the public HTTPS URL when the tunnel is ready.</p>
             <TerminalCommand command="goport http 8080" />
           </li>
         </ol>

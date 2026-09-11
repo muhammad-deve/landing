@@ -318,6 +318,29 @@ export interface DashboardData {
   billing?: BillingData;
 }
 
+export type UsageRange = "hour" | "day" | "week";
+
+export interface UsagePoint {
+  timestamp: string;
+  requests: number;
+  bytes: number;
+}
+
+export interface UsageSeries {
+  tunnelId: string;
+  subdomain: string;
+  url: string;
+  points: UsagePoint[];
+}
+
+export interface UsageData {
+  range: UsageRange;
+  from: string;
+  to: string;
+  bucketSeconds: number;
+  series: UsageSeries[];
+}
+
 /** Thrown when the dashboard request is rejected for an expired/invalid session. */
 export class UnauthorizedError extends Error {
   constructor(message = "Your session has expired. Please log in again.") {
@@ -340,6 +363,31 @@ export async function getDashboard(token: string): Promise<DashboardData> {
   }
 
   return (await res.json()) as DashboardData;
+}
+
+/** Fetch privacy-safe, time-bucketed traffic for every tunnel owned by the user. */
+export async function getDashboardUsage(
+  token: string,
+  range: UsageRange,
+  signal?: AbortSignal,
+): Promise<UsageData> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/dashboard/usage?range=${encodeURIComponent(range)}`,
+    {
+      headers: { Authorization: token },
+      signal,
+      cache: "no-store",
+    },
+  );
+
+  if (res.status === 401 || res.status === 403) {
+    throw new UnauthorizedError();
+  }
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't load usage history. Please try again."));
+  }
+
+  return (await res.json()) as UsageData;
 }
 
 /** Keep the cached account email in sync after a verified email change. */

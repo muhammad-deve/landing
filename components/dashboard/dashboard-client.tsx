@@ -2,13 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   Activity,
-  ArrowRight,
-  ArrowUpRight,
-  BarChart3,
   BookOpen,
   Check,
   Camera,
@@ -19,7 +25,6 @@ import {
   Eye,
   EyeOff,
   FileText,
-  Gauge,
   Globe2,
   HardDrive,
   KeyRound,
@@ -38,7 +43,6 @@ import {
   Server,
   ShieldCheck,
   Square,
-  TerminalSquare,
   Trash2,
   X,
 } from "lucide-react";
@@ -55,6 +59,9 @@ import {
   type DashboardData,
   type DashboardDomain,
   type TokenItem,
+  type UsageData,
+  type UsageRange,
+  type UsageSeries,
   API_BASE_URL,
   clearAuthSession,
   changePassword,
@@ -63,6 +70,7 @@ import {
   deleteToken,
   deleteTunnel,
   getDashboard,
+  getDashboardUsage,
   readAuthSession,
   requestEmailChange,
   stopTunnel,
@@ -76,22 +84,16 @@ import { copyText } from "@/lib/clipboard";
 import { isPasswordValid } from "@/lib/password";
 
 type DashboardView =
-  | "overview"
+  | "Dashboard"
   | "tunnels"
-  | "inspector"
-  | "domains"
-  | "usage"
   | "billing"
   | "tokens"
   | "profile"
   | "docs";
 
 const DASHBOARD_VIEWS = new Set<DashboardView>([
-  "overview",
+  "Dashboard",
   "tunnels",
-  "inspector",
-  "domains",
-  "usage",
   "billing",
   "tokens",
   "profile",
@@ -102,7 +104,7 @@ function dashboardViewFromHash(hash: string): DashboardView {
   const rawView = hash.replace(/^#/, "");
   if (rawView === "settings") return "profile";
   const candidate = rawView as DashboardView;
-  return DASHBOARD_VIEWS.has(candidate) ? candidate : "overview";
+  return DASHBOARD_VIEWS.has(candidate) ? candidate : "Dashboard";
 }
 
 interface NavItem {
@@ -115,16 +117,13 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Workspace",
     items: [
-      { id: "overview", label: "Overview", icon: LayoutDashboard },
+      { id: "Dashboard", label: "Dashboard", icon: LayoutDashboard },
       { id: "tunnels", label: "Tunnels", icon: Network },
-      { id: "inspector", label: "Request inspector", icon: Activity },
-      { id: "domains", label: "Domains", icon: Globe2 },
     ],
   },
   {
     label: "Account",
     items: [
-      { id: "usage", label: "Usage", icon: Gauge },
       { id: "billing", label: "Billing", icon: CreditCard },
       { id: "tokens", label: "API keys & tokens", icon: KeyRound },
     ],
@@ -132,11 +131,8 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 const VIEW_COPY: Record<DashboardView, { title: string; description: string }> = {
-  overview: { title: "Dashboard", description: "Your tunnels, traffic, and next action in one place." },
+  Dashboard: { title: "Dashboard", description: "Your tunnels, traffic, and next action in one place." },
   tunnels: { title: "Tunnels", description: "Manage public endpoints connected to your local services." },
-  inspector: { title: "Request inspector", description: "Inspect and replay traffic without adding debug code." },
-  domains: { title: "Domains", description: "Reserve memorable GoPort addresses for your projects." },
-  usage: { title: "Usage", description: "Understand where requests and bandwidth are being used." },
   billing: { title: "Billing", description: "Manage your plan, limits, and future invoices." },
   tokens: { title: "API keys & tokens", description: "Authenticate trusted machines and CI environments." },
   profile: { title: "Profile", description: "Manage your photo, personal details, and sign-in security." },
@@ -160,7 +156,7 @@ export function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [view, setView] = useState<DashboardView>("overview");
+  const [view, setView] = useState<DashboardView>("Dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DashboardDomain | null>(null);
@@ -204,9 +200,12 @@ export function DashboardClient() {
 
   useEffect(() => {
     const syncViewFromUrl = () => {
+      const rawView = window.location.hash.replace(/^#/, "");
       const nextView = dashboardViewFromHash(window.location.hash);
-      if (window.location.hash === "#settings") {
+      if (rawView === "settings") {
         window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#profile`);
+      } else if (rawView && !DASHBOARD_VIEWS.has(rawView as DashboardView)) {
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
       }
       setView(nextView);
       setMobileMenuOpen(false);
@@ -233,7 +232,7 @@ export function DashboardClient() {
     }
 
     const baseUrl = `${window.location.pathname}${window.location.search}`;
-    window.history.pushState(null, "", next === "overview" ? baseUrl : `${baseUrl}#${next}`);
+    window.history.pushState(null, "", next === "Dashboard" ? baseUrl : `${baseUrl}#${next}`);
     setView(next);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -305,12 +304,12 @@ export function DashboardClient() {
             </div>
             <ThemeToggle />
             <Button
-              onClick={() => setCreateOpen(true)}
+              onClick={() => navigate("docs")}
               className="h-10 rounded-xl bg-primary px-3.5 text-primary-foreground shadow-none hover:bg-primary/90"
             >
-              <Plus className="size-4" />
-              <span className="hidden sm:inline">Create tunnel</span>
-              <span className="sm:hidden">New</span>
+              <BookOpen className="size-4" />
+              <span className="hidden sm:inline">Quick Start</span>
+              <span className="sm:hidden">Start</span>
             </Button>
           </div>
         </header>
@@ -323,11 +322,13 @@ export function DashboardClient() {
             </div>
           )}
 
-          {view === "overview" && (
-            <OverviewPanel
+          {view === "Dashboard" && (
+            <DashboardPanel
+              authToken={authToken}
               data={data}
               firstName={firstName}
               activeDomains={activeDomains}
+              onAuthError={handleAuthError}
               onCreate={() => setCreateOpen(true)}
               onNavigate={navigate}
               onSelectDomain={setSelectedDomain}
@@ -345,9 +346,6 @@ export function DashboardClient() {
               busyAction={busyAction}
             />
           )}
-          {view === "inspector" && <InspectorPanel domains={data.domains} />}
-          {view === "domains" && <DomainsPanel domains={data.domains} onCreate={() => setCreateOpen(true)} onSelect={setSelectedDomain} />}
-          {view === "usage" && <UsagePanel data={data} />}
           {view === "billing" && <BillingPanel billing={data.billing} />}
           {view === "tokens" && (
             <TokensPanel
@@ -460,19 +458,23 @@ function DashboardSidebar({
   );
 }
 
-function OverviewPanel({
+function DashboardPanel({
+  authToken,
   data,
   firstName,
   activeDomains,
+  onAuthError,
   onCreate,
   onNavigate,
   onSelectDomain,
   onStop,
   busyAction,
 }: {
+  authToken: string | null;
   data: DashboardData;
   firstName: string;
   activeDomains: DashboardDomain[];
+  onAuthError: () => void;
   onCreate: () => void;
   onNavigate: (view: DashboardView) => void;
   onSelectDomain: (domain: DashboardDomain) => void;
@@ -498,7 +500,13 @@ function OverviewPanel({
 
       <OperationalSummary data={data} activeCount={activeDomains.length} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.75fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.75fr)]">
+        <TunnelUsageChart
+          authToken={authToken}
+          domains={data.domains}
+          refreshKey={`${data.totalRequests}:${data.totalBytes}:${data.domains.length}`}
+          onAuthError={onAuthError}
+        />
         <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
           <PanelHeader title="Recent tunnels" description="Public endpoints created by your CLI." action="View all" onAction={() => onNavigate("tunnels")} />
           {data.domains.length ? (
@@ -548,14 +556,15 @@ function ActiveTunnelControl({ domain, extraCount, onSelect, onStop, busy }: { d
 
 function NoActiveTunnel({ onCreate }: { onCreate: () => void }) {
   return (
-    <section className="relative overflow-hidden rounded-[1.6rem] border border-[#26433d] bg-[#102124] p-6 text-white sm:p-8">
-      <div className="absolute right-[-4rem] top-[-6rem] size-72 rounded-full border border-[#35d39a]/15" />
-      <div className="absolute right-[-1rem] top-[-3rem] size-52 rounded-full border border-[#35d39a]/15" />
-      <div className="relative max-w-2xl">
-        <div className="flex items-center gap-2 text-sm text-white/55"><span className="size-2 rounded-full bg-white/30" />No active tunnel</div>
-        <h3 className="mt-5 text-2xl font-semibold tracking-[-0.045em] sm:text-3xl">Your next public URL starts locally.</h3>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-white/60">Choose a port, copy the generated command, and run it in your terminal. The connected tunnel will appear here automatically.</p>
-        <button type="button" onClick={onCreate} className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#38d996] px-4 text-sm font-semibold text-[#07120e] hover:bg-[#63e4b2]"><Plus className="size-4" />Create tunnel command</button>
+    <section className="relative overflow-hidden rounded-[1.4rem] border border-[#26433d] bg-[#102124] px-5 py-4 text-white sm:px-6 sm:py-5">
+      <div className="absolute -right-8 -top-20 size-48 rounded-full border border-[#35d39a]/15" />
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs text-white/50"><span className="size-2 rounded-full bg-white/30" />No active tunnel</div>
+          <h3 className="mt-2 text-lg font-semibold tracking-[-0.035em]">Your next public URL starts locally.</h3>
+          <p className="mt-1.5 max-w-2xl text-sm leading-5 text-white/55">Choose a port, copy the command, and run it beside your local app.</p>
+        </div>
+        <button type="button" onClick={onCreate} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#38d996] px-4 text-sm font-semibold text-[#07120e] hover:bg-[#63e4b2]"><Plus className="size-4" />Create tunnel command</button>
       </div>
     </section>
   );
@@ -621,74 +630,242 @@ function TunnelsPanel({ domains, onCreate, onSelect, onStop, onDelete, busyActio
   );
 }
 
-function InspectorPanel({ domains }: { domains: DashboardDomain[] }) {
-  const active = domains.find((domain) => domain.isCurrent);
+const USAGE_RANGES: Array<{ value: UsageRange; label: string }> = [
+  { value: "hour", label: "1H" },
+  { value: "day", label: "24H" },
+  { value: "week", label: "7D" },
+];
+
+const USAGE_COLORS = Array.from({ length: 10 }, (_, index) => `var(--usage-${index + 1})`);
+
+type UsageChartDatum = {
+  timestamp: string;
+  values: Record<string, { requests: number; bytes: number }>;
+  [key: string]: string | number | Record<string, { requests: number; bytes: number }>;
+};
+
+function TunnelUsageChart({
+  authToken,
+  domains,
+  refreshKey,
+  onAuthError,
+}: {
+  authToken: string | null;
+  domains: DashboardDomain[];
+  refreshKey: string;
+  onAuthError: () => void;
+}) {
+  const [range, setRange] = useState<UsageRange>("day");
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+
+    void getDashboardUsage(authToken, range, controller.signal)
+      .then(setUsage)
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        if (err instanceof UnauthorizedError) {
+          onAuthError();
+          return;
+        }
+        setError(err instanceof Error ? err.message : "Couldn't load usage history.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [authToken, range, refreshKey, retryKey, onAuthError]);
+
+  const series = useMemo<UsageSeries[]>(() => {
+    const ranked = [...(usage?.series ?? [])];
+    ranked.sort((left, right) => {
+      const leftRequests = left.points.reduce((total, point) => total + point.requests, 0);
+      const rightRequests = right.points.reduce((total, point) => total + point.requests, 0);
+      return rightRequests - leftRequests;
+    });
+    return ranked.slice(0, 10);
+  }, [usage]);
+
+  const chartData = useMemo<UsageChartDatum[]>(() => {
+    const firstSeries = series[0];
+    if (!firstSeries) return [];
+    return firstSeries.points.map((point, pointIndex) => {
+      const values: UsageChartDatum["values"] = {};
+      const row: UsageChartDatum = { timestamp: point.timestamp, values };
+      for (const item of series) {
+        const seriesPoint = item.points[pointIndex];
+        const requests = seriesPoint?.requests ?? 0;
+        const bytes = seriesPoint?.bytes ?? 0;
+        row[item.tunnelId] = requests;
+        values[item.tunnelId] = { requests, bytes };
+      }
+      return row;
+    });
+  }, [series]);
+
+  const hasTraffic = chartData.some((row) =>
+    Object.values(row.values).some((value) => value.requests > 0 || value.bytes > 0),
+  );
+  const totalSeriesCount = usage?.series.length ?? 0;
+
   return (
-    <div className="space-y-6">
-      <SectionLead title="Debug the request, not the tunnel." description="GoPort captures request details in the local dashboard beside the process receiving them. That keeps credentials and payloads off the hosted control plane." />
-      <section className="overflow-hidden rounded-[1.5rem] border border-[#29423f] bg-[#102124] text-white">
-        <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div><div className="flex items-center gap-2"><span className={`size-2 rounded-full ${active ? "animate-pulse bg-[#38d996]" : "bg-white/30"}`} /><h3 className="font-semibold">Local request stream</h3></div><p className="mt-1.5 text-xs text-white/50">Dashboard · http://127.0.0.1:4040</p></div>
-          <a href="http://127.0.0.1:4040" target="_blank" rel="noreferrer" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#102124] hover:bg-[#e6f3ef]">Open local inspector <ArrowUpRight className="size-4" /></a>
+    <section className={`${PANEL} min-w-0 overflow-hidden rounded-[1.4rem]`}>
+      <div className="flex flex-col gap-4 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <h3 className="text-sm font-semibold">Tunnel usage</h3>
+          <p className="mt-1 text-xs text-muted-foreground">{totalSeriesCount > 10 ? `Top 10 of ${totalSeriesCount} tunnels` : "Requests over time"} · hover for requests and transferred bytes.</p>
         </div>
-        <div className="grid min-h-[350px] md:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-          <div className="border-b border-white/10 p-5 md:border-b-0 md:border-r md:p-6">
-            <div className="flex items-center justify-between text-xs text-white/45"><span>Incoming requests</span><span>{active ? `${active.subdomain}.goport.uz` : "No tunnel connected"}</span></div>
-            <div className="mt-16 flex flex-col items-center text-center"><span className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#38d996]"><Activity className="size-5" /></span><p className="mt-4 text-sm font-medium">Requests appear on your local machine</p><p className="mt-2 max-w-sm text-xs leading-5 text-white/45">Send a request through an active GoPort URL, then open the inspector to view headers, bodies, responses, timings, and replay controls.</p></div>
+        <div className="flex items-center gap-2">
+          {loading && usage && <Loader2 className="size-3.5 animate-spin text-muted-foreground" aria-label="Refreshing usage" />}
+          <div className="inline-flex w-fit rounded-xl bg-secondary p-1" aria-label="Usage date range">
+          {USAGE_RANGES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                if (option.value === range) return;
+                setUsage(null);
+                setRange(option.value);
+              }}
+              className={`rounded-lg px-3 py-1.5 font-mono text-[11px] font-semibold transition-colors ${range === option.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              aria-pressed={range === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
           </div>
-          <div className="bg-black/10 p-5 md:p-6">
-            <p className="text-xs text-white/45">Request details</p>
-            <div className="mt-8 space-y-5">
-              {["Headers", "Request body", "Response", "Timing"].map((item) => <div key={item}><div className="mb-2 flex items-center justify-between text-xs"><span className="text-white/60">{item}</span><span className="text-white/25">Waiting</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/7"><div className="h-full w-0 bg-[#38d996]" /></div></div>)}
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5">
+        {loading && !usage ? (
+          <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 size-4 animate-spin" />Loading usage…</div>
+        ) : error && !usage ? (
+          <div className="flex h-[300px] flex-col items-center justify-center px-6 text-center"><p className="text-sm font-medium">Usage history is unavailable</p><p className="mt-1.5 text-xs text-muted-foreground">{error}</p><button type="button" onClick={() => setRetryKey((value) => value + 1)} className="mt-4 text-sm font-semibold text-primary hover:underline">Try again</button></div>
+        ) : domains.length === 0 ? (
+          <div className="flex h-[300px] flex-col items-center justify-center px-6 text-center"><Activity className="size-5 text-primary" /><p className="mt-3 text-sm font-medium">No tunnel usage yet</p><p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">Create a tunnel and send traffic through it to start this chart.</p></div>
+        ) : (
+          <>
+            <div className="relative h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.6} />
+                  <XAxis
+                    dataKey="timestamp"
+                    axisLine={false}
+                    tickLine={false}
+                    minTickGap={28}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tickFormatter={(value: string) => formatUsageTick(value, range)}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tickFormatter={formatCompactNumber}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "4 4", strokeOpacity: 0.55 }}
+                    content={<TunnelUsageTooltip range={range} series={series} />}
+                  />
+                  {series.map((item, index) => (
+                    <Line
+                      key={item.tunnelId}
+                      type="monotone"
+                      dataKey={item.tunnelId}
+                      name={item.subdomain}
+                      stroke={USAGE_COLORS[index % USAGE_COLORS.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2, fill: "var(--background)" }}
+                      isAnimationActive={false}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+              {!hasTraffic && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-8"><span className="rounded-lg border border-border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur">No traffic recorded in this period yet.</span></div>
+              )}
             </div>
-          </div>
-        </div>
-      </section>
-      <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-6`}><h3 className="font-semibold">Test the active tunnel</h3><p className="mt-2 text-sm text-muted-foreground">This command sends a request you can inspect immediately.</p><CopyCommand className="mt-5" command={`curl -i ${active?.url || "https://your-app.goport.uz"}/health`} /></section>
+            <div className="mt-3 flex max-h-20 flex-wrap gap-x-4 gap-y-2 overflow-y-auto border-t border-border/60 pt-3">
+              {series.map((item, index) => (
+                <div key={item.tunnelId} className="flex min-w-0 items-center gap-1.5" title={item.url}>
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: USAGE_COLORS[index % USAGE_COLORS.length] }} />
+                  <span className="max-w-40 truncate font-mono text-[10px] text-muted-foreground">{item.subdomain}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TunnelUsageTooltip({
+  active,
+  label,
+  payload,
+  range,
+  series,
+}: {
+  active?: boolean;
+  label?: string | number;
+  payload?: Array<{ payload?: UsageChartDatum }>;
+  range: UsageRange;
+  series: UsageSeries[];
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row || !label) return null;
+
+  return (
+    <div className="max-h-72 min-w-56 overflow-y-auto rounded-xl border border-border bg-background/95 p-3 text-xs shadow-xl backdrop-blur">
+      <p className="font-medium text-foreground">{formatUsageTooltipDate(String(label), range)}</p>
+      <div className="mt-2.5 space-y-2">
+        {series.map((item, index) => {
+          const value = row.values[item.tunnelId] ?? { requests: 0, bytes: 0 };
+          return (
+            <div key={item.tunnelId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+              <span className="flex min-w-0 items-center gap-2"><span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: USAGE_COLORS[index % USAGE_COLORS.length] }} /><span className="truncate font-mono text-muted-foreground">{item.subdomain}</span></span>
+              <span className="text-right font-mono"><strong className="font-semibold text-foreground">{formatNumber(value.requests)}</strong><span className="ml-1 text-muted-foreground">req</span><span className="mx-1.5 text-border">·</span><span className="text-muted-foreground">{formatBytes(value.bytes)}</span></span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function DomainsPanel({ domains, onCreate, onSelect }: { domains: DashboardDomain[]; onCreate: () => void; onSelect: (domain: DashboardDomain) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionLead title="Give local work a stable address." description="Use a generated subdomain for quick tests or reserve a name you can keep in webhook and OAuth provider settings." />
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <PanelHeader title="GoPort subdomains" description={`${domains.length} ${domains.length === 1 ? "address" : "addresses"} attached to your account`} action="Reserve a name" onAction={onCreate} />
-        {domains.length ? <div className="divide-y divide-border/70">{domains.map((domain) => <CompactTunnelRow key={domain.subdomain} domain={domain} onClick={() => onSelect(domain)} showDomainType />)}</div> : <CompactEmpty onCreate={onCreate} />}
-      </section>
-      <section className={`${PANEL} grid overflow-hidden rounded-[1.4rem] lg:grid-cols-[1fr_0.7fr]`}>
-        <div className="p-5 sm:p-7"><div className="flex items-center gap-3"><LockKeyhole className="size-5 text-primary" /><h3 className="font-semibold">Custom domains</h3><SoonBadge /></div><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Bring your own domain, point a CNAME at GoPort, and receive managed SSL automatically. DNS verification will appear here when this feature launches.</p></div>
-        <div className="border-t border-border bg-secondary/45 p-5 lg:border-l lg:border-t-0 sm:p-7"><p className="text-xs font-medium text-muted-foreground">Planned DNS record</p><code className="mt-3 block rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-xs">CNAME tunnel.goport.uz</code><p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-3.5 text-primary" />Managed TLS certificate</p></div>
-      </section>
-    </div>
-  );
+function formatUsageTick(value: string, range: UsageRange) {
+  const date = new Date(value);
+  if (range === "week") return new Intl.DateTimeFormat(undefined, { weekday: "short", timeZone: "UTC" }).format(date);
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: range === "hour" ? "2-digit" : undefined }).format(date);
 }
 
-function UsagePanel({ data }: { data: DashboardData }) {
-  const maxRequests = Math.max(...data.domains.map((domain) => domain.requests), 1);
-  return (
-    <div className="space-y-6">
-      <SectionLead title="Traffic, without the guesswork." description="Current totals are lifetime counters. Monthly billing periods and hard plan limits will appear here when subscriptions launch." />
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <div className="grid md:grid-cols-2">
-          <UsageTotal icon={Activity} label="Requests served" value={formatNumber(data.totalRequests)} note="Across every tunnel" />
-          <UsageTotal icon={HardDrive} label="Bandwidth transferred" value={formatBytes(data.totalBytes)} note="Uploaded and downloaded" border />
-        </div>
-      </section>
-      <section className={`${PANEL} rounded-[1.4rem] p-5 sm:p-7`}>
-        <div className="flex items-center justify-between gap-4"><div><h3 className="font-semibold">Usage by tunnel</h3><p className="mt-1 text-sm text-muted-foreground">Relative request volume across your endpoints.</p></div><BarChart3 className="size-5 text-primary" /></div>
-        <div className="mt-7 space-y-6">
-          {data.domains.length ? data.domains.map((domain) => (
-            <div key={domain.subdomain}>
-              <div className="mb-2.5 flex items-end justify-between gap-4"><div className="min-w-0"><p className="truncate font-mono text-sm font-medium">{domain.subdomain}.goport.uz</p><p className="mt-1 text-xs text-muted-foreground">{formatBytes(domain.bytes)}</p></div><p className="font-mono text-sm">{formatNumber(domain.requests)}</p></div>
-              <div className="h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max((domain.requests / maxRequests) * 100, domain.requests ? 3 : 0)}%` }} /></div>
-            </div>
-          )) : <p className="py-10 text-center text-sm text-muted-foreground">Usage will appear after your first tunnel receives traffic.</p>}
-        </div>
-      </section>
-    </div>
-  );
+function formatUsageTooltipDate(value: string, range: UsageRange) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: range === "week" ? "UTC" : undefined,
+    timeZoneName: range === "week" ? "short" : undefined,
+  }).format(new Date(value));
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function BillingPanel({ billing }: { billing?: BillingData }) {
@@ -1406,22 +1583,6 @@ function IconActionButton({ icon: Icon, label, onClick, danger = false, spinning
   return <button type="button" onClick={onClick} className={`flex size-9 items-center justify-center rounded-xl text-muted-foreground ${danger ? "hover:bg-destructive/10 hover:text-destructive" : "hover:bg-secondary hover:text-foreground"}`} title={label} aria-label={label}><Icon className={`size-4 ${spinning ? "animate-spin" : ""}`} /></button>;
 }
 
-function InspectorCapability({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
-  return <div className="bg-background p-5 sm:p-6"><Icon className="size-4 text-primary" /><h4 className="mt-4 text-sm font-semibold">{title}</h4><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{text}</p></div>;
-}
-
-function UsageTotal({ icon: Icon, label, value, note, border = false }: { icon: LucideIcon; label: string; value: string; note: string; border?: boolean }) {
-  return <div className={`p-6 sm:p-8 ${border ? "border-t border-border md:border-l md:border-t-0" : ""}`}><div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="size-4 text-primary" />{label}</div><p className="mt-5 font-mono text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">{value}</p><p className="mt-3 text-xs text-muted-foreground">{note} · Lifetime total</p></div>;
-}
-
-function PlanCard({ name, price, suffix, description, features, current = false }: { name: string; price: string; suffix?: string; description: string; features: string[]; current?: boolean }) {
-  return <section className={`${PANEL} flex flex-col rounded-[1.4rem] p-6 sm:p-7`}><div className="flex items-center justify-between"><h3 className="text-lg font-semibold">{name}</h3>{current ? <span className="rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Current plan</span> : <SoonBadge />}</div><p className="mt-5"><span className="text-4xl font-semibold tracking-[-0.055em]">{price}</span>{suffix && <span className="ml-1 text-sm text-muted-foreground">{suffix}</span>}</p><p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p><ul className="my-6 space-y-3 border-y border-border py-5">{features.map((feature) => <li key={feature} className="flex items-center gap-2.5 text-sm"><Check className="size-4 text-primary" />{feature}</li>)}</ul><Button disabled className={`mt-auto h-10 rounded-xl shadow-none ${current ? "bg-secondary text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{current ? "Plan active" : "Upgrade coming soon"}</Button></section>;
-}
-
-function SettingsRow({ icon: Icon, title, description, action }: { icon: LucideIcon; title: string; description: string; action: React.ReactNode }) {
-  return <div className="flex items-center gap-4 border-b border-border/70 p-5 last:border-0 sm:px-6"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div className="min-w-0 flex-1"><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-xs text-muted-foreground">{description}</p></div>{action}</div>;
-}
-
 function GuideStep({ number, title, description, children }: { number: string; title: string; description: React.ReactNode; children: React.ReactNode }) {
   return (
     <li className="grid gap-5 px-5 py-6 sm:px-7 sm:py-7 md:grid-cols-[16rem_minmax(0,1fr)] lg:gap-9">
@@ -1438,7 +1599,6 @@ function GuideStep({ number, title, description, children }: { number: string; t
 }
 
 function DetailField({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-border bg-secondary/30 px-4 py-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1.5 break-all font-mono text-xs font-medium">{value}</p></div>; }
-function SoonBadge() { return <span className="rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-medium text-muted-foreground">Coming soon</span>; }
 
 function splitFullName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
