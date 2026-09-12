@@ -272,8 +272,6 @@ export interface BillingCard {
   id: string;
   brand: string;
   last4: string;
-  expiresMonth: number;
-  expiresYear: number;
   isDefault: boolean;
 }
 
@@ -282,26 +280,39 @@ export interface BillingTransaction {
   amountCents: number;
   currency: string;
   description: string;
-  status: "paid" | "pending" | "failed" | "refunded";
+  status: "paid" | "pending" | "failed" | "refunded" | "partially_refunded";
   chargedAt: string;
   cardBrand: string;
   cardLast4: string;
+  invoiceUrl?: string;
 }
 
 export interface BillingSubscription {
   id: string;
   planName: string;
-  status: "active" | "trialing" | "past_due" | "canceled";
+  status: "on_trial" | "active" | "paused" | "past_due" | "unpaid" | "cancelled" | "expired";
   amountCents: number;
   currency: string;
   interval: "month" | "year";
   currentPeriodEnd?: string;
   cancelAtPeriodEnd: boolean;
-  freeMonthOfferUsed: boolean;
-  nextChargeAmountCents?: number;
+  portalAvailable: boolean;
+}
+
+export interface PlanLimits {
+  key: "free" | "pro";
+  isPro: boolean;
+  maxActiveTunnels: number;
+  maxTokens: number;
+  monthlyBytes: number;
+  customSubdomains: boolean;
 }
 
 export interface BillingData {
+  isPro: boolean;
+  checkoutConfigured: boolean;
+  availablePlans: Array<"monthly" | "yearly">;
+  plan: PlanLimits;
   subscription: BillingSubscription | null;
   cards: BillingCard[];
   transactions: BillingTransaction[];
@@ -363,6 +374,36 @@ export async function getDashboard(token: string): Promise<DashboardData> {
   }
 
   return (await res.json()) as DashboardData;
+}
+
+export async function createBillingCheckout(
+  authToken: string,
+  plan: "monthly" | "yearly",
+): Promise<{ url: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authToken },
+    body: JSON.stringify({ plan }),
+  });
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't start checkout. Please try again."));
+  }
+  return (await res.json()) as { url: string };
+}
+
+export async function getBillingPortal(authToken: string): Promise<{ url: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
+    headers: { Authorization: authToken },
+    cache: "no-store",
+  });
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't open billing management. Please try again."));
+  }
+  return (await res.json()) as { url: string };
 }
 
 /** Fetch privacy-safe, time-bucketed traffic for every tunnel owned by the user. */

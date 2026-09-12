@@ -24,6 +24,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  ExternalLink,
   FileText,
   Globe2,
   HardDrive,
@@ -66,11 +67,13 @@ import {
   clearAuthSession,
   changePassword,
   confirmEmailChange,
+  createBillingCheckout,
   createToken,
   deleteToken,
   deleteTunnel,
   getDashboard,
   getDashboardUsage,
+  getBillingPortal,
   readAuthSession,
   requestEmailChange,
   stopTunnel,
@@ -141,14 +144,6 @@ const VIEW_COPY: Record<DashboardView, { title: string; description: string }> =
 
 const PANEL = "border border-border/80 bg-white/90 dark:bg-card/72";
 const SIDEBAR_PRESS = "cursor-pointer transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset motion-reduce:transform-none motion-reduce:transition-none";
-const CANCELLATION_REASONS = [
-  { id: "price", label: "The price is too high" },
-  { id: "usage", label: "I do not use GoPort enough" },
-  { id: "features", label: "A feature I need is missing" },
-  { id: "alternative", label: "I am switching to another service" },
-  { id: "other", label: "Something else" },
-] as const;
-
 export function DashboardClient() {
   const router = useRouter();
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -348,7 +343,9 @@ export function DashboardClient() {
               busyAction={busyAction}
             />
           )}
-          {view === "billing" && <BillingPanel billing={data.billing} />}
+          {view === "billing" && (
+            <BillingPanel billing={data.billing} authToken={authToken} onAuthError={handleAuthError} />
+          )}
           {view === "tokens" && (
             <TokensPanel
               authToken={authToken}
@@ -886,116 +883,146 @@ function formatCompactNumber(value: number) {
   return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-function BillingPanel({ billing }: { billing?: BillingData }) {
-  const [cards, setCards] = useState<BillingCard[]>(billing?.cards ?? []);
-  const [subscription, setSubscription] = useState(billing?.subscription ?? null);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const cardRemovalLocked = Boolean(subscription && subscription.status !== "canceled");
-  const canCancel = Boolean(subscription && !subscription.cancelAtPeriodEnd && subscription.status !== "canceled");
-  const nextAmount = subscription?.nextChargeAmountCents ?? subscription?.amountCents ?? 0;
+function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingData; authToken: string | null; onAuthError: () => void }) {
+  const [busy, setBusy] = useState<"monthly" | "yearly" | "portal" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const subscription = billing?.subscription ?? null;
+  const cards: BillingCard[] = billing?.cards ?? [];
+  const availablePlans = new Set(billing?.availablePlans ?? []);
 
-  const removeCard = (card: BillingCard) => {
-    if (cardRemovalLocked) return;
-    setCards((current) => current.filter((item) => item.id !== card.id));
-    setNotice(`${card.brand} ending in ${card.last4} was removed.`);
+  const openCheckout = async (plan: "monthly" | "yearly") => {
+    if (!authToken || busy) return;
+    setBusy(plan);
+    setError(null);
+    try {
+      const response = await createBillingCheckout(authToken, plan);
+      window.location.assign(response.url);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't start checkout.");
+      setBusy(null);
+    }
   };
 
-  const acceptFreeMonth = () => {
-    setSubscription((current) => current ? { ...current, freeMonthOfferUsed: true, nextChargeAmountCents: 0 } : current);
-    setCancelOpen(false);
-    setNotice("Your next month is free. Your subscription remains active and you will not be charged for the next billing period.");
+  const openPortal = async () => {
+    if (!authToken || busy) return;
+    setBusy("portal");
+    setError(null);
+    try {
+      const response = await getBillingPortal(authToken);
+      window.location.assign(response.url);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't open billing management.");
+      setBusy(null);
+    }
   };
 
-  const scheduleCancellation = () => {
-    setSubscription((current) => current ? { ...current, cancelAtPeriodEnd: true } : current);
-    setCancelOpen(false);
-    setNotice(`Cancellation scheduled${subscription?.currentPeriodEnd ? ` for ${formatDate(subscription.currentPeriodEnd)}` : " for the end of this billing period"}.`);
-  };
+  let subscriptionCopy = "Free includes two active tunnels, 5 GB per month, and one device token.";
+  if (subscription) {
+    const periodEnd = subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : "the end of this billing period";
+    if (subscription.cancelAtPeriodEnd) subscriptionCopy = `Pro access continues until ${periodEnd}.`;
+    else if (subscription.status === "expired") subscriptionCopy = "This subscription has ended. Choose a plan to restore Pro access.";
+    else if (subscription.status === "on_trial") subscriptionCopy = `Your Pro trial continues until ${periodEnd}.`;
+    else if (subscription.status === "paused") subscriptionCopy = "Billing is paused. Use the Lemon Squeezy portal to review or resume your subscription.";
+    else if (subscription.status === "past_due") subscriptionCopy = "Payment is past due. Update your payment method in the Lemon Squeezy portal.";
+    else if (subscription.status === "unpaid") subscriptionCopy = "Payment is unpaid. Resolve it in the Lemon Squeezy portal to avoid losing Pro access.";
+    else subscriptionCopy = `Renews ${subscription.currentPeriodEnd ? `on ${periodEnd}` : "at the end of the current billing period"}.`;
+  }
 
   return (
     <div className="space-y-6">
-      <SectionLead title="Billing, without surprises." description="Manage your plan and payment methods, then review every charge made to your account." />
+      <SectionLead title="Billing, without surprises." description="Manage your plan and payment method, then review every charge made to your account." />
 
-      {notice && (
-        <div className="flex items-start justify-between gap-4 rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-3 text-sm text-primary">
-          <span className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0" />{notice}</span>
-          <button type="button" onClick={() => setNotice(null)} className="cursor-pointer rounded-md p-1 hover:bg-primary/10" aria-label="Dismiss billing message"><X className="size-4" /></button>
+      {error && (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError(null)} className="rounded-md p-1 hover:bg-destructive/10" aria-label="Dismiss billing error"><X className="size-4" /></button>
         </div>
       )}
 
       <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
         <div className="flex flex-col justify-between gap-6 p-5 sm:flex-row sm:items-end sm:p-7">
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm font-medium text-primary"><CircleDollarSign className="size-4" />Current plan</div>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h3 className="text-3xl font-semibold tracking-[-0.05em]">{subscription?.planName ?? "Free"}</h3>
-              {subscription?.cancelAtPeriodEnd ? <span className="rounded-full bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Cancellation scheduled</span> : subscription && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold capitalize text-primary">{subscription.status}</span>}
+              <h3 className="text-3xl font-semibold">{billing?.isPro ? subscription?.planName ?? "Pro" : "Free"}</h3>
+              {subscription?.cancelAtPeriodEnd ? <span className="rounded-full bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Ends this period</span> : subscription && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{formatSubscriptionStatus(subscription.status)}</span>}
             </div>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              {subscription
-                ? subscription.cancelAtPeriodEnd
-                  ? `Your access continues until ${subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : "the end of this billing period"}.`
-                  : `Renews ${subscription.currentPeriodEnd ? `on ${formatDate(subscription.currentPeriodEnd)}` : "at the end of the current billing period"}.`
-                : "You are using the Free plan. No payment method is required."}
-            </p>
-          </div>
-          <div className="flex flex-col items-stretch gap-3 sm:items-end">
-            <div className="rounded-xl border border-border bg-secondary/25 px-4 py-3 text-sm">
-              <span className="text-muted-foreground">Next charge</span>
-              <span className="ml-8 font-mono font-semibold">{formatCurrency(nextAmount, subscription?.currency ?? "USD")}</span>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{subscriptionCopy}</p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-border/70 pt-4 text-xs text-muted-foreground">
+              <span><strong className="font-semibold text-foreground">{billing?.plan.maxActiveTunnels ?? 2}</strong> active tunnels</span>
+              <span><strong className="font-semibold text-foreground">{formatBytes(billing?.plan.monthlyBytes ?? 5 * 1024 ** 3)}</strong> monthly traffic</span>
+              <span><strong className="font-semibold text-foreground">{billing?.plan.maxTokens ?? 1}</strong> device {(billing?.plan.maxTokens ?? 1) === 1 ? "token" : "tokens"}</span>
+              <span className={billing?.plan.customSubdomains ? "text-primary" : undefined}>{billing?.plan.customSubdomains ? "Custom subdomains included" : "Random subdomains"}</span>
             </div>
-            {canCancel && <Button type="button" variant="outline" onClick={() => setCancelOpen(true)} className="h-10 cursor-pointer rounded-xl border-border bg-transparent text-muted-foreground shadow-none hover:border-destructive/35 hover:bg-destructive/5 hover:text-destructive">Cancel subscription</Button>}
           </div>
+
+          {billing?.isPro && subscription ? (
+            <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
+              <div className="border-b border-border px-1 pb-3 text-sm sm:text-right">
+                <span className="text-muted-foreground">{subscription.cancelAtPeriodEnd ? "Access until" : "Plan price"}</span>
+                <span className="ml-5 font-mono font-semibold">{subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : `${formatCurrency(subscription.amountCents, subscription.currency)}/${subscription.interval}`}</span>
+              </div>
+              <Button type="button" variant="outline" onClick={() => void openPortal()} disabled={busy !== null || !subscription.portalAvailable} className="h-10 rounded-xl bg-transparent">
+                {busy === "portal" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}Manage in Lemon Squeezy
+              </Button>
+            </div>
+          ) : (
+            <div className="w-full shrink-0 border-t border-border pt-5 sm:w-64 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+              <p className="text-sm font-semibold">Upgrade to Pro</p>
+              <div className="mt-3 grid gap-2">
+                <Button type="button" onClick={() => void openCheckout("monthly")} disabled={busy !== null || !billing?.checkoutConfigured || !availablePlans.has("monthly")} className="h-11 justify-between rounded-xl bg-primary text-primary-foreground shadow-none">
+                  <span>{busy === "monthly" ? "Opening checkout" : "Monthly"}</span>{busy === "monthly" ? <Loader2 className="size-4 animate-spin" /> : <span className="font-mono">$2.99</span>}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => void openCheckout("yearly")} disabled={busy !== null || !billing?.checkoutConfigured || !availablePlans.has("yearly")} className="h-11 justify-between rounded-xl bg-transparent">
+                  <span>{busy === "yearly" ? "Opening checkout" : "Yearly"}</span>{busy === "yearly" ? <Loader2 className="size-4 animate-spin" /> : <span className="font-mono">$19.99</span>}
+                </Button>
+              </div>
+              {!billing?.checkoutConfigured && <p className="mt-3 text-xs leading-5 text-muted-foreground">Checkout is temporarily unavailable.</p>}
+            </div>
+          )}
         </div>
       </section>
 
       <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <PanelHeader title="Payment methods" description={`${cards.length} saved ${cards.length === 1 ? "card" : "cards"}`} />
+        <PanelHeader title="Payment method" description="Managed securely by Lemon Squeezy" />
         {cards.length ? (
           <div className="divide-y divide-border/70">
             {cards.map((card) => (
               <div key={card.id} className="flex items-center gap-4 p-5 sm:px-6">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/35 text-muted-foreground"><CreditCard className="size-4" /></span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold capitalize">{card.brand} •••• {card.last4}</h4>{card.isDefault && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Default</span>}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">Expires {String(card.expiresMonth).padStart(2, "0")}/{String(card.expiresYear).slice(-2)}</p>
+                  <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold capitalize">{card.brand || "Card"} ending in {card.last4 || "----"}</h4>{card.isDefault && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Current</span>}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">Update this payment method in the customer portal.</p>
                 </div>
-                <button type="button" onClick={() => removeCard(card)} disabled={cardRemovalLocked} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-muted-foreground" aria-label={`Remove ${card.brand} ending in ${card.last4}`} title={cardRemovalLocked ? "Cancel your active subscription before removing a card" : "Remove card"}><Trash2 className="size-4" /></button>
               </div>
             ))}
           </div>
         ) : (
-          <BillingEmpty icon={CreditCard} title="No saved cards" description="A payment method will appear here after you subscribe to a paid plan." />
+          <BillingEmpty icon={CreditCard} title="No payment method" description="A payment method will appear here after you subscribe to Pro." />
         )}
-        {cardRemovalLocked && cards.length > 0 && <div className="flex items-start gap-2 border-t border-border/70 bg-secondary/20 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />Payment methods cannot be removed while a subscription is active.</div>}
       </section>
 
       <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <PanelHeader title="Recent transactions" description="Your latest subscription charges and their payment methods." />
+        <PanelHeader title="Recent transactions" description="Subscription charges recorded from Lemon Squeezy." />
         {billing?.transactions.length ? (
           <div className="divide-y divide-border/70">
             {billing.transactions.map((transaction) => (
               <div key={transaction.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
                 <div className="min-w-0"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
-                <span className="w-fit rounded-lg border border-border bg-secondary/25 px-2.5 py-1.5 text-xs text-muted-foreground capitalize">{transaction.cardBrand} •••• {transaction.cardLast4}</span>
-                <div className="sm:min-w-28 sm:text-right"><p className="font-mono text-sm font-semibold">{formatCurrency(transaction.amountCents, transaction.currency)}</p><p className={`mt-1 text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{transaction.status}</p></div>
+                <span className="w-fit rounded-lg border border-border bg-secondary/25 px-2.5 py-1.5 text-xs text-muted-foreground capitalize">{transaction.cardLast4 ? `${transaction.cardBrand || "card"} ending in ${transaction.cardLast4}` : "Lemon Squeezy"}</span>
+                <div className="flex items-center gap-2 sm:min-w-32 sm:justify-end sm:text-right">
+                  <div><p className="font-mono text-sm font-semibold">{formatCurrency(transaction.amountCents, transaction.currency)}</p><p className={`mt-1 text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{formatTransactionStatus(transaction.status)}</p></div>
+                  {transaction.invoiceUrl && <a href={transaction.invoiceUrl} target="_blank" rel="noreferrer" className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Open invoice" title="Open invoice"><ExternalLink className="size-3.5" /></a>}
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <BillingEmpty icon={FileText} title="No transactions yet" description="Successful charges will appear here with the card used for each payment." />
+          <BillingEmpty icon={FileText} title="No transactions yet" description="Charges will appear here after your first Pro checkout." />
         )}
       </section>
-
-      {cancelOpen && subscription && (
-        <CancelSubscriptionDialog
-          subscription={subscription}
-          onClose={() => setCancelOpen(false)}
-          onAcceptOffer={acceptFreeMonth}
-          onCancel={scheduleCancellation}
-        />
-      )}
     </div>
   );
 }
@@ -1004,61 +1031,21 @@ function BillingEmpty({ icon: Icon, title, description }: { icon: LucideIcon; ti
   return <div className="flex items-start gap-4 p-5 sm:p-6"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div><h4 className="text-sm font-semibold">{title}</h4><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{description}</p></div></div>;
 }
 
-function CancelSubscriptionDialog({ subscription, onClose, onAcceptOffer, onCancel }: { subscription: NonNullable<BillingData["subscription"]>; onClose: () => void; onAcceptOffer: () => void; onCancel: () => void }) {
-  const [step, setStep] = useState<"reason" | "offer">("reason");
-  const [reason, setReason] = useState("");
-  const [customReason, setCustomReason] = useState("");
-  const validReason = Boolean(reason && (reason !== "other" || customReason.trim().length >= 3));
-
-  const continueCancellation = () => {
-    if (!validReason) return;
-    if (subscription.freeMonthOfferUsed) onCancel();
-    else setStep("offer");
+function formatSubscriptionStatus(status: NonNullable<BillingData["subscription"]>["status"]) {
+  const labels: Record<typeof status, string> = {
+    on_trial: "Trial",
+    active: "Active",
+    paused: "Paused",
+    past_due: "Past due",
+    unpaid: "Unpaid",
+    cancelled: "Cancelled",
+    expired: "Expired",
   };
+  return labels[status];
+}
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <button type="button" onClick={onClose} className="absolute inset-0 cursor-pointer bg-[#071012]/55 backdrop-blur-sm" aria-label="Close cancellation dialog" />
-      <div role="dialog" aria-modal="true" aria-labelledby="cancel-subscription-title" className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.4rem] border border-border bg-background p-5 shadow-2xl sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <div><p className="text-sm font-medium text-destructive">Cancel subscription</p><h3 id="cancel-subscription-title" className="mt-1 text-xl font-semibold tracking-[-0.03em]">{step === "reason" ? "What made you decide to leave?" : "Before you go—take a month on us."}</h3></div>
-          <button type="button" onClick={onClose} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Close"><X className="size-4" /></button>
-        </div>
-
-        {step === "reason" ? (
-          <>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">Your answer helps us improve GoPort. Choose the reason that best fits.</p>
-            <div className="mt-5 space-y-2" role="radiogroup" aria-label="Cancellation reason">
-              {CANCELLATION_REASONS.map((option) => (
-                <label key={option.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${reason === option.id ? "border-primary/45 bg-primary/[0.06] text-foreground" : "border-border hover:bg-secondary/45"}`}>
-                  <input type="radio" name="cancellation-reason" value={option.id} checked={reason === option.id} onChange={() => setReason(option.id)} className="mt-0.5 size-4 accent-[var(--primary)]" />
-                  <span>{option.label}</span>
-                </label>
-              ))}
-            </div>
-            {reason === "other" && <textarea value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Tell us what we could do better" rows={3} className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3.5 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20" />}
-            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={onClose} className="h-10 cursor-pointer rounded-xl">Keep my subscription</Button>
-              <Button type="button" onClick={continueCancellation} disabled={!validReason} className="h-10 cursor-pointer rounded-xl bg-foreground text-background shadow-none hover:bg-foreground/90">Continue</Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mt-6 rounded-[1.2rem] border border-primary/25 bg-primary/[0.06] p-5">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><CircleDollarSign className="size-5" /></span>
-              <h4 className="mt-5 text-lg font-semibold">Keep every Pro feature for one month—free.</h4>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Your next bill will be {formatCurrency(0, subscription.currency)}. After the free month, your regular {formatCurrency(subscription.amountCents, subscription.currency)} / {subscription.interval} price resumes. This offer is available once per account.</p>
-            </div>
-            <div className="mt-6 space-y-2">
-              <Button type="button" onClick={onAcceptOffer} className="h-11 w-full cursor-pointer rounded-xl bg-primary text-primary-foreground shadow-none hover:bg-primary/90">Use my free month</Button>
-              <Button type="button" variant="ghost" onClick={onCancel} className="h-11 w-full cursor-pointer rounded-xl text-destructive hover:bg-destructive/8 hover:text-destructive">No thanks, cancel subscription</Button>
-            </div>
-            <button type="button" onClick={() => setStep("reason")} className="mt-4 w-full cursor-pointer text-center text-xs text-muted-foreground hover:text-foreground">Back to reason</button>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function formatTransactionStatus(status: BillingData["transactions"][number]["status"]) {
+  return status.replaceAll("_", " ");
 }
 
 function TokensPanel({ authToken, tokens, onChange, onAuthError }: { authToken: string | null; tokens: TokenItem[]; onChange: () => void; onAuthError: () => void }) {
