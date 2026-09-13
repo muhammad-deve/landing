@@ -883,15 +883,34 @@ function formatCompactNumber(value: number) {
   return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
+type BillingAction = "monthly" | "yearly" | "manage" | "cancel" | "card";
+
+const PRO_PLAN_FEATURES = ["10 active tunnels", "70 GB monthly traffic", "Custom subdomains", "5 device tokens"];
+
 function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingData; authToken: string | null; onAuthError: () => void }) {
-  const [busy, setBusy] = useState<"monthly" | "yearly" | "portal" | null>(null);
+  const [busy, setBusy] = useState<BillingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const subscription = billing?.subscription ?? null;
   const cards: BillingCard[] = billing?.cards ?? [];
+  const transactions = billing?.transactions ?? [];
   const availablePlans = new Set(billing?.availablePlans ?? []);
+  const planLimits = billing?.plan ?? {
+    key: "free" as const,
+    isPro: false,
+    maxActiveTunnels: 2,
+    maxTokens: 1,
+    monthlyBytes: 5 * 1024 ** 3,
+    customSubdomains: false,
+  };
+  const hasActivePro = Boolean(billing?.isPro && subscription);
+  const hasPortal = Boolean(subscription?.portalAvailable);
 
   const openCheckout = async (plan: "monthly" | "yearly") => {
     if (!authToken || busy) return;
+    if (!billing?.checkoutConfigured || !availablePlans.has(plan)) {
+      setError("This checkout is temporarily unavailable. Your plan has not changed.");
+      return;
+    }
     setBusy(plan);
     setError(null);
     try {
@@ -904,9 +923,13 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
     }
   };
 
-  const openPortal = async () => {
+  const openPortal = async (action: BillingAction) => {
     if (!authToken || busy) return;
-    setBusy("portal");
+    if (!hasPortal) {
+      setError("Billing management becomes available after your first subscription checkout.");
+      return;
+    }
+    setBusy(action);
     setError(null);
     try {
       const response = await getBillingPortal(authToken);
@@ -916,6 +939,14 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
       else setError(err instanceof Error ? err.message : "Couldn't open billing management.");
       setBusy(null);
     }
+  };
+
+  const selectPlan = (plan: "monthly" | "yearly") => {
+    if (hasActivePro) {
+      void openPortal(plan);
+      return;
+    }
+    void openCheckout(plan);
   };
 
   let subscriptionCopy = "Free includes two active tunnels, 5 GB per month, and one device token.";
@@ -931,71 +962,107 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
   }
 
   return (
-    <div className="space-y-6">
-      <SectionLead title="Billing, without surprises." description="Manage your plan and payment method, then review every charge made to your account." />
+    <div className="space-y-5">
+      <SectionLead title="Plans and billing" description="Choose a Pro tariff, manage your subscription, and review payments." />
 
       {error && (
-        <div className="flex items-start justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-start justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive" role="alert">
           <span>{error}</span>
           <button type="button" onClick={() => setError(null)} className="rounded-md p-1 hover:bg-destructive/10" aria-label="Dismiss billing error"><X className="size-4" /></button>
         </div>
       )}
 
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <div className="flex flex-col justify-between gap-6 p-5 sm:flex-row sm:items-end sm:p-7">
+      <section className={`${PANEL} overflow-hidden rounded-lg`}>
+        <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-6">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-sm font-medium text-primary"><CircleDollarSign className="size-4" />Current plan</div>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><CircleDollarSign className="size-4 text-primary" />Current plan</div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               <h3 className="text-3xl font-semibold">{billing?.isPro ? subscription?.planName ?? "Pro" : "Free"}</h3>
-              {subscription?.cancelAtPeriodEnd ? <span className="rounded-full bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Ends this period</span> : subscription && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{formatSubscriptionStatus(subscription.status)}</span>}
+              {subscription?.cancelAtPeriodEnd ? <span className="rounded-md bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Ends this period</span> : subscription ? <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{formatSubscriptionStatus(subscription.status)}</span> : <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground">Active</span>}
             </div>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{subscriptionCopy}</p>
-            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-border/70 pt-4 text-xs text-muted-foreground">
-              <span><strong className="font-semibold text-foreground">{billing?.plan.maxActiveTunnels ?? 2}</strong> active tunnels</span>
-              <span><strong className="font-semibold text-foreground">{formatBytes(billing?.plan.monthlyBytes ?? 5 * 1024 ** 3)}</strong> monthly traffic</span>
-              <span><strong className="font-semibold text-foreground">{billing?.plan.maxTokens ?? 1}</strong> device {(billing?.plan.maxTokens ?? 1) === 1 ? "token" : "tokens"}</span>
-              <span className={billing?.plan.customSubdomains ? "text-primary" : undefined}>{billing?.plan.customSubdomains ? "Custom subdomains included" : "Random subdomains"}</span>
-            </div>
           </div>
 
-          {billing?.isPro && subscription ? (
-            <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
-              <div className="border-b border-border px-1 pb-3 text-sm sm:text-right">
-                <span className="text-muted-foreground">{subscription.cancelAtPeriodEnd ? "Access until" : "Plan price"}</span>
-                <span className="ml-5 font-mono font-semibold">{subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : `${formatCurrency(subscription.amountCents, subscription.currency)}/${subscription.interval}`}</span>
-              </div>
-              <Button type="button" variant="outline" onClick={() => void openPortal()} disabled={busy !== null || !subscription.portalAvailable} className="h-10 rounded-xl bg-transparent">
-                {busy === "portal" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}Manage in Lemon Squeezy
+          {hasActivePro && subscription ? (
+            <div className="flex min-w-52 flex-col gap-2">
+              <Button type="button" variant="outline" onClick={() => void openPortal("manage")} disabled={busy !== null || !hasPortal} className="h-10 justify-between rounded-lg bg-transparent">
+                <span>{busy === "manage" ? "Opening billing" : "Manage subscription"}</span>{busy === "manage" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => void openPortal("cancel")} disabled={busy !== null || !hasPortal} className={`h-10 justify-between rounded-lg ${subscription.cancelAtPeriodEnd ? "text-primary hover:bg-primary/8 hover:text-primary" : "text-destructive hover:bg-destructive/8 hover:text-destructive"}`}>
+                <span>{busy === "cancel" ? "Opening billing" : subscription.cancelAtPeriodEnd ? "Resume subscription" : "Cancel subscription"}</span>{busy === "cancel" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
               </Button>
             </div>
           ) : (
-            <div className="w-full shrink-0 border-t border-border pt-5 sm:w-64 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-              <p className="text-sm font-semibold">Upgrade to Pro</p>
-              <div className="mt-3 grid gap-2">
-                <Button type="button" onClick={() => void openCheckout("monthly")} disabled={busy !== null || !billing?.checkoutConfigured || !availablePlans.has("monthly")} className="h-11 justify-between rounded-xl bg-primary text-primary-foreground shadow-none">
-                  <span>{busy === "monthly" ? "Opening checkout" : "Monthly"}</span>{busy === "monthly" ? <Loader2 className="size-4 animate-spin" /> : <span className="font-mono">$2.99</span>}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => void openCheckout("yearly")} disabled={busy !== null || !billing?.checkoutConfigured || !availablePlans.has("yearly")} className="h-11 justify-between rounded-xl bg-transparent">
-                  <span>{busy === "yearly" ? "Opening checkout" : "Yearly"}</span>{busy === "yearly" ? <Loader2 className="size-4 animate-spin" /> : <span className="font-mono">$19.99</span>}
-                </Button>
-              </div>
-              {!billing?.checkoutConfigured && <p className="mt-3 text-xs leading-5 text-muted-foreground">Checkout is temporarily unavailable.</p>}
-            </div>
+            <Button type="button" onClick={() => document.getElementById("billing-plans")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-10 justify-between rounded-lg bg-primary text-primary-foreground shadow-none lg:min-w-52">
+              View Pro tariffs<ChevronRight className="size-4" />
+            </Button>
           )}
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-border border-t border-border sm:grid-cols-4 sm:divide-y-0">
+          <PlanLimit value={String(planLimits.maxActiveTunnels)} label="Active tunnels" />
+          <PlanLimit value={formatBytes(planLimits.monthlyBytes)} label="Monthly traffic" />
+          <PlanLimit value={String(planLimits.maxTokens)} label="Device tokens" />
+          <PlanLimit value={planLimits.customSubdomains ? "Included" : "Not included"} label="Custom subdomains" emphasized={planLimits.customSubdomains} />
         </div>
       </section>
 
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
-        <PanelHeader title="Payment method" description="Managed securely by Lemon Squeezy" />
+      <section id="billing-plans" className={`${PANEL} scroll-mt-24 overflow-hidden rounded-lg`}>
+        <div className="flex flex-col gap-2 border-b border-border px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+          <div><h3 className="text-base font-semibold">Pro tariffs</h3><p className="mt-1 text-sm text-muted-foreground">Both plans include every Pro feature. Choose how often you want to pay.</p></div>
+          {!billing?.checkoutConfigured && !hasActivePro && <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Checkout temporarily unavailable</span>}
+        </div>
+        <div className="divide-y divide-border">
+          <BillingPlanRow
+            name="Monthly"
+            description="Flexible billing with a 7-day free trial."
+            price="$2.99"
+            period="month"
+            features={PRO_PLAN_FEATURES}
+            current={hasActivePro && subscription?.interval === "month"}
+            cancelledCurrent={Boolean(subscription?.cancelAtPeriodEnd && subscription.interval === "month")}
+            hasActivePro={hasActivePro}
+            available={availablePlans.has("monthly") && Boolean(billing?.checkoutConfigured)}
+            busy={busy === "monthly"}
+            disabled={busy !== null}
+            onSelect={() => selectPlan("monthly")}
+          />
+          <BillingPlanRow
+            name="Yearly"
+            description="The same Pro limits at the lowest price."
+            price="$19.99"
+            period="year"
+            badge="Save 44%"
+            features={PRO_PLAN_FEATURES}
+            current={hasActivePro && subscription?.interval === "year"}
+            cancelledCurrent={Boolean(subscription?.cancelAtPeriodEnd && subscription.interval === "year")}
+            hasActivePro={hasActivePro}
+            available={availablePlans.has("yearly") && Boolean(billing?.checkoutConfigured)}
+            busy={busy === "yearly"}
+            disabled={busy !== null}
+            onSelect={() => selectPlan("yearly")}
+          />
+        </div>
+      </section>
+
+      <section className={`${PANEL} overflow-hidden rounded-lg`}>
+        <div className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div><h3 className="text-base font-semibold">Payment methods</h3><p className="mt-1 text-sm text-muted-foreground">Card details are stored and managed by Lemon Squeezy.</p></div>
+          {hasPortal && (
+            <Button type="button" variant="outline" onClick={() => void openPortal("card")} disabled={busy !== null} className={`h-9 rounded-lg bg-transparent ${!hasActivePro && cards.length ? "border-destructive/30 text-destructive hover:bg-destructive/8 hover:text-destructive" : ""}`}>
+              {busy === "card" ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}{!hasActivePro && cards.length ? "Remove saved card" : "Manage cards"}
+            </Button>
+          )}
+        </div>
         {cards.length ? (
           <div className="divide-y divide-border/70">
             {cards.map((card) => (
               <div key={card.id} className="flex items-center gap-4 p-5 sm:px-6">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/35 text-muted-foreground"><CreditCard className="size-4" /></span>
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/35 text-muted-foreground"><CreditCard className="size-4" /></span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold capitalize">{card.brand || "Card"} ending in {card.last4 || "----"}</h4>{card.isDefault && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Current</span>}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">Update this payment method in the customer portal.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{hasActivePro ? "Used for your active Pro subscription." : "No active subscription is using this card."}</p>
                 </div>
+                <Button type="button" variant="ghost" onClick={() => void openPortal("card")} disabled={busy !== null || !hasPortal} className={`h-9 rounded-lg ${hasActivePro ? "text-muted-foreground" : "text-destructive hover:bg-destructive/8 hover:text-destructive"}`}>{hasActivePro ? "Change" : "Remove"}<ExternalLink className="size-3.5" /></Button>
               </div>
             ))}
           </div>
@@ -1004,11 +1071,11 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
         )}
       </section>
 
-      <section className={`${PANEL} overflow-hidden rounded-[1.4rem]`}>
+      <section className={`${PANEL} overflow-hidden rounded-lg`}>
         <PanelHeader title="Recent transactions" description="Subscription charges recorded from Lemon Squeezy." />
-        {billing?.transactions.length ? (
+        {transactions.length ? (
           <div className="divide-y divide-border/70">
-            {billing.transactions.map((transaction) => (
+            {transactions.map((transaction) => (
               <div key={transaction.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
                 <div className="min-w-0"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
                 <span className="w-fit rounded-lg border border-border bg-secondary/25 px-2.5 py-1.5 text-xs text-muted-foreground capitalize">{transaction.cardLast4 ? `${transaction.cardBrand || "card"} ending in ${transaction.cardLast4}` : "Lemon Squeezy"}</span>
@@ -1027,8 +1094,32 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
   );
 }
 
+function PlanLimit({ value, label, emphasized = false }: { value: string; label: string; emphasized?: boolean }) {
+  return <div className="min-w-0 px-4 py-4 sm:px-5"><p className={`truncate text-sm font-semibold ${emphasized ? "text-primary" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>;
+}
+
+function BillingPlanRow({ name, description, price, period, badge, features, current, cancelledCurrent, hasActivePro, available, busy, disabled, onSelect }: { name: string; description: string; price: string; period: "month" | "year"; badge?: string; features: string[]; current: boolean; cancelledCurrent: boolean; hasActivePro: boolean; available: boolean; busy: boolean; disabled: boolean; onSelect: () => void }) {
+  const buttonLabel = current ? (cancelledCurrent ? "Resume plan" : "Current plan") : hasActivePro ? `Switch to ${name.toLowerCase()}` : name === "Monthly" ? "Start 7-day trial" : "Subscribe yearly";
+  return (
+    <div className={`grid gap-5 px-5 py-6 sm:px-6 xl:grid-cols-[minmax(180px,0.8fr)_minmax(360px,1.5fr)_190px] xl:items-center ${badge ? "border-l-[3px] border-l-primary bg-primary/[0.035]" : "border-l-[3px] border-l-transparent"}`}>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2"><h4 className="text-lg font-semibold">Pro {name}</h4>{badge && <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{badge}</span>}{current && <span className="rounded-md bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground">Your plan</span>}</div>
+        <p className="mt-2 text-sm leading-5 text-muted-foreground">{description}</p>
+      </div>
+      <ul className="grid gap-x-5 gap-y-2 text-sm text-muted-foreground sm:grid-cols-2">
+        {features.map((feature) => <li key={feature} className="flex items-center gap-2"><Check className="size-3.5 shrink-0 text-primary" /><span>{feature}</span></li>)}
+      </ul>
+      <div className="flex flex-col gap-3 xl:items-stretch xl:text-right">
+        <div><span className="font-mono text-2xl font-semibold text-foreground">{price}</span><span className="ml-1 text-sm text-muted-foreground">/{period}</span></div>
+        <Button type="button" variant={badge && !current ? "default" : "outline"} onClick={onSelect} disabled={disabled || (current && !cancelledCurrent)} className={`h-10 justify-center rounded-lg shadow-none ${badge && !current ? "bg-primary text-primary-foreground" : "bg-transparent"}`}>{busy ? <Loader2 className="size-4 animate-spin" /> : current && !cancelledCurrent ? <Check className="size-4" /> : <ChevronRight className="size-4" />}{buttonLabel}</Button>
+        {!available && !hasActivePro && <p className="text-xs text-amber-700 dark:text-amber-300">Temporarily unavailable</p>}
+      </div>
+    </div>
+  );
+}
+
 function BillingEmpty({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) {
-  return <div className="flex items-start gap-4 p-5 sm:p-6"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div><h4 className="text-sm font-semibold">{title}</h4><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{description}</p></div></div>;
+  return <div className="flex items-start gap-4 p-5 sm:p-6"><span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground"><Icon className="size-4" /></span><div><h4 className="text-sm font-semibold">{title}</h4><p className="mt-1.5 text-sm leading-6 text-muted-foreground">{description}</p></div></div>;
 }
 
 function formatSubscriptionStatus(status: NonNullable<BillingData["subscription"]>["status"]) {
