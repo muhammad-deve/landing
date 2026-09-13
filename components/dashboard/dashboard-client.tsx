@@ -25,7 +25,6 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
-  FileText,
   Globe2,
   HardDrive,
   KeyRound,
@@ -39,9 +38,11 @@ import {
   Network,
   Plus,
   Radio,
+  ReceiptText,
   RefreshCw,
   RotateCw,
   Server,
+  Settings2,
   ShieldCheck,
   Square,
   Trash2,
@@ -51,11 +52,19 @@ import { GoPortLogo, GoPortMark } from "@/components/goport-logo";
 import { InstallCommand } from "@/components/install-command";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import {
-  type BillingCard,
   type BillingData,
   type DashboardData,
   type DashboardDomain,
@@ -883,15 +892,20 @@ function formatCompactNumber(value: number) {
   return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-type BillingAction = "monthly" | "yearly" | "manage" | "cancel" | "card";
+type BillingAction = "monthly" | "yearly" | "manage";
 
-const PRO_PLAN_FEATURES = ["10 active tunnels", "70 GB monthly traffic", "Custom subdomains", "5 device tokens"];
+const PRO_PLAN_FEATURES = [
+  { value: "10", label: "Active tunnels" },
+  { value: "70 GB", label: "Monthly traffic" },
+  { value: "5", label: "Device tokens" },
+  { value: "Included", label: "Custom subdomains" },
+];
 
 function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingData; authToken: string | null; onAuthError: () => void }) {
   const [busy, setBusy] = useState<BillingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
   const subscription = billing?.subscription ?? null;
-  const cards: BillingCard[] = billing?.cards ?? [];
   const transactions = billing?.transactions ?? [];
   const availablePlans = new Set(billing?.availablePlans ?? []);
   const planLimits = billing?.plan ?? {
@@ -923,30 +937,25 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
     }
   };
 
-  const openPortal = async (action: BillingAction) => {
+  const openPortal = async () => {
     if (!authToken || busy) return;
     if (!hasPortal) {
       setError("Billing management becomes available after your first subscription checkout.");
       return;
     }
-    setBusy(action);
+    setBusy("manage");
     setError(null);
     try {
       const response = await getBillingPortal(authToken);
       window.location.assign(response.url);
     } catch (err) {
       if (err instanceof UnauthorizedError) onAuthError();
-      else setError(err instanceof Error ? err.message : "Couldn't open billing management.");
+      else {
+        setManageOpen(false);
+        setError(err instanceof Error ? err.message : "Couldn't open billing management.");
+      }
       setBusy(null);
     }
-  };
-
-  const selectPlan = (plan: "monthly" | "yearly") => {
-    if (hasActivePro) {
-      void openPortal(plan);
-      return;
-    }
-    void openCheckout(plan);
   };
 
   let subscriptionCopy = "Free includes two active tunnels, 5 GB per month, and one device token.";
@@ -960,10 +969,15 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
     else if (subscription.status === "unpaid") subscriptionCopy = "Payment is unpaid. Resolve it in the Lemon Squeezy portal to avoid losing Pro access.";
     else subscriptionCopy = `Renews ${subscription.currentPeriodEnd ? `on ${periodEnd}` : "at the end of the current billing period"}.`;
   }
+  if (!hasActivePro && subscription) subscriptionCopy = "Your previous Pro subscription has ended. Choose a billing cycle below to restore access.";
+
+  const sectionDescription = hasActivePro
+    ? "Review your subscription and payment receipts."
+    : "Review your current limits and upgrade when you need more room.";
 
   return (
     <div className="space-y-5">
-      <SectionLead title="Plans and billing" description="Choose a Pro tariff, manage your subscription, and review payments." />
+      <SectionLead title="Plans and billing" description={sectionDescription} />
 
       {error && (
         <div className="flex items-start justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive" role="alert">
@@ -977,24 +991,19 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><CircleDollarSign className="size-4 text-primary" />Current plan</div>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <h3 className="text-3xl font-semibold">{billing?.isPro ? subscription?.planName ?? "Pro" : "Free"}</h3>
-              {subscription?.cancelAtPeriodEnd ? <span className="rounded-md bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Ends this period</span> : subscription ? <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{formatSubscriptionStatus(subscription.status)}</span> : <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground">Active</span>}
+              <h3 className="text-3xl font-semibold">{hasActivePro ? subscription?.planName ?? "Pro" : "Free"}</h3>
+              {hasActivePro && subscription?.cancelAtPeriodEnd ? <span className="rounded-md bg-amber-500/12 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Ends this period</span> : hasActivePro && subscription ? <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{formatSubscriptionStatus(subscription.status)}</span> : <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground">Active</span>}
             </div>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{subscriptionCopy}</p>
           </div>
 
           {hasActivePro && subscription ? (
-            <div className="flex min-w-52 flex-col gap-2">
-              <Button type="button" variant="outline" onClick={() => void openPortal("manage")} disabled={busy !== null || !hasPortal} className="h-10 justify-between rounded-lg bg-transparent">
-                <span>{busy === "manage" ? "Opening billing" : "Manage subscription"}</span>{busy === "manage" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => void openPortal("cancel")} disabled={busy !== null || !hasPortal} className={`h-10 justify-between rounded-lg ${subscription.cancelAtPeriodEnd ? "text-primary hover:bg-primary/8 hover:text-primary" : "text-destructive hover:bg-destructive/8 hover:text-destructive"}`}>
-                <span>{busy === "cancel" ? "Opening billing" : subscription.cancelAtPeriodEnd ? "Resume subscription" : "Cancel subscription"}</span>{busy === "cancel" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
-              </Button>
-            </div>
+            <Button type="button" variant="outline" onClick={() => setManageOpen(true)} disabled={busy !== null || !hasPortal} className="h-10 min-w-52 justify-between rounded-lg bg-transparent">
+              <span>Manage subscription</span><Settings2 className="size-4" />
+            </Button>
           ) : (
             <Button type="button" onClick={() => document.getElementById("billing-plans")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-10 justify-between rounded-lg bg-primary text-primary-foreground shadow-none lg:min-w-52">
-              View Pro tariffs<ChevronRight className="size-4" />
+              Explore GoPort Pro<ChevronRight className="size-4" />
             </Button>
           )}
         </div>
@@ -1006,90 +1015,87 @@ function BillingPanel({ billing, authToken, onAuthError }: { billing?: BillingDa
         </div>
       </section>
 
-      <section id="billing-plans" className={`${PANEL} scroll-mt-24 overflow-hidden rounded-lg`}>
-        <div className="flex flex-col gap-2 border-b border-border px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-          <div><h3 className="text-base font-semibold">Pro tariffs</h3><p className="mt-1 text-sm text-muted-foreground">Both plans include every Pro feature. Choose how often you want to pay.</p></div>
-          {!billing?.checkoutConfigured && !hasActivePro && <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Checkout temporarily unavailable</span>}
-        </div>
-        <div className="divide-y divide-border">
-          <BillingPlanRow
-            name="Monthly"
-            description="Flexible billing with a 7-day free trial."
-            price="$2.99"
-            period="month"
-            features={PRO_PLAN_FEATURES}
-            current={hasActivePro && subscription?.interval === "month"}
-            cancelledCurrent={Boolean(subscription?.cancelAtPeriodEnd && subscription.interval === "month")}
-            hasActivePro={hasActivePro}
-            available={availablePlans.has("monthly") && Boolean(billing?.checkoutConfigured)}
-            busy={busy === "monthly"}
-            disabled={busy !== null}
-            onSelect={() => selectPlan("monthly")}
-          />
-          <BillingPlanRow
-            name="Yearly"
-            description="The same Pro limits at the lowest price."
-            price="$19.99"
-            period="year"
-            badge="Save 44%"
-            features={PRO_PLAN_FEATURES}
-            current={hasActivePro && subscription?.interval === "year"}
-            cancelledCurrent={Boolean(subscription?.cancelAtPeriodEnd && subscription.interval === "year")}
-            hasActivePro={hasActivePro}
-            available={availablePlans.has("yearly") && Boolean(billing?.checkoutConfigured)}
-            busy={busy === "yearly"}
-            disabled={busy !== null}
-            onSelect={() => selectPlan("yearly")}
-          />
-        </div>
-      </section>
-
-      <section className={`${PANEL} overflow-hidden rounded-lg`}>
-        <div className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div><h3 className="text-base font-semibold">Payment methods</h3><p className="mt-1 text-sm text-muted-foreground">Card details are stored and managed by Lemon Squeezy.</p></div>
-          {hasPortal && (
-            <Button type="button" variant="outline" onClick={() => void openPortal("card")} disabled={busy !== null} className={`h-9 rounded-lg bg-transparent ${!hasActivePro && cards.length ? "border-destructive/30 text-destructive hover:bg-destructive/8 hover:text-destructive" : ""}`}>
-              {busy === "card" ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}{!hasActivePro && cards.length ? "Remove saved card" : "Manage cards"}
-            </Button>
-          )}
-        </div>
-        {cards.length ? (
-          <div className="divide-y divide-border/70">
-            {cards.map((card) => (
-              <div key={card.id} className="flex items-center gap-4 p-5 sm:px-6">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/35 text-muted-foreground"><CreditCard className="size-4" /></span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold capitalize">{card.brand || "Card"} ending in {card.last4 || "----"}</h4>{card.isDefault && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Current</span>}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{hasActivePro ? "Used for your active Pro subscription." : "No active subscription is using this card."}</p>
-                </div>
-                <Button type="button" variant="ghost" onClick={() => void openPortal("card")} disabled={busy !== null || !hasPortal} className={`h-9 rounded-lg ${hasActivePro ? "text-muted-foreground" : "text-destructive hover:bg-destructive/8 hover:text-destructive"}`}>{hasActivePro ? "Change" : "Remove"}<ExternalLink className="size-3.5" /></Button>
-              </div>
-            ))}
+      {!hasActivePro && (
+        <section id="billing-plans" className={`${PANEL} scroll-mt-24 overflow-hidden rounded-lg`}>
+          <div className="flex flex-col gap-2 border-b border-border px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+            <div><h3 className="text-base font-semibold">GoPort Pro</h3><p className="mt-1 text-sm text-muted-foreground">One plan with two ways to pay.</p></div>
+            {!billing?.checkoutConfigured && <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Checkout temporarily unavailable</span>}
           </div>
-        ) : (
-          <BillingEmpty icon={CreditCard} title="No payment method" description="A payment method will appear here after you subscribe to Pro." />
-        )}
-      </section>
+          <div className="grid lg:grid-cols-[minmax(260px,0.8fr)_minmax(480px,1.2fr)]">
+            <div className="px-5 py-6 sm:px-6 lg:border-r lg:border-border">
+              <h4 className="text-sm font-semibold">Everything included</h4>
+              <ul className="mt-5 grid grid-cols-2 gap-x-5 gap-y-5">
+                {PRO_PLAN_FEATURES.map((feature) => (
+                  <li key={feature.label} className="flex min-w-0 items-start gap-2.5">
+                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="min-w-0"><strong className="block text-sm font-semibold text-foreground">{feature.value}</strong><span className="mt-0.5 block text-xs text-muted-foreground">{feature.label}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="divide-y divide-border border-t border-border lg:border-t-0">
+              <BillingCycleRow
+                name="Monthly"
+                description="Seven-day trial, then billed monthly."
+                price="$2.99"
+                period="month"
+                available={availablePlans.has("monthly") && Boolean(billing?.checkoutConfigured)}
+                busy={busy === "monthly"}
+                disabled={busy !== null}
+                onSelect={() => void openCheckout("monthly")}
+              />
+              <BillingCycleRow
+                name="Yearly"
+                description="$1.67 per month when billed annually."
+                price="$19.99"
+                period="year"
+                badge="Save 44%"
+                available={availablePlans.has("yearly") && Boolean(billing?.checkoutConfigured)}
+                busy={busy === "yearly"}
+                disabled={busy !== null}
+                onSelect={() => void openCheckout("yearly")}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={`${PANEL} overflow-hidden rounded-lg`}>
-        <PanelHeader title="Recent transactions" description="Subscription charges recorded from Lemon Squeezy." />
+        <PanelHeader title="Payment history" description="Subscription charges and receipts from Lemon Squeezy." />
         {transactions.length ? (
           <div className="divide-y divide-border/70">
             {transactions.map((transaction) => (
-              <div key={transaction.id} className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
-                <div className="min-w-0"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
-                <span className="w-fit rounded-lg border border-border bg-secondary/25 px-2.5 py-1.5 text-xs text-muted-foreground capitalize">{transaction.cardLast4 ? `${transaction.cardBrand || "card"} ending in ${transaction.cardLast4}` : "Lemon Squeezy"}</span>
-                <div className="flex items-center gap-2 sm:min-w-32 sm:justify-end sm:text-right">
-                  <div><p className="font-mono text-sm font-semibold">{formatCurrency(transaction.amountCents, transaction.currency)}</p><p className={`mt-1 text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{formatTransactionStatus(transaction.status)}</p></div>
-                  {transaction.invoiceUrl && <a href={transaction.invoiceUrl} target="_blank" rel="noreferrer" className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Open invoice" title="Open invoice"><ExternalLink className="size-3.5" /></a>}
+              <div key={transaction.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-5 py-4 sm:gap-5 sm:px-6">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground"><CircleDollarSign className="size-4" /></span>
+                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><span className={`text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{formatTransactionStatus(transaction.status)}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
+                <p className="font-mono text-sm font-semibold sm:min-w-24 sm:text-right">{formatCurrency(transaction.amountCents, transaction.currency)}</p>
+                <div className="flex justify-end">
+                  {transaction.invoiceUrl ? <a href={transaction.invoiceUrl} target="_blank" rel="noreferrer" className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Open receipt" title="Open receipt"><ReceiptText className="size-4" /></a> : <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground/40" aria-label="Receipt unavailable" title="Receipt unavailable"><ReceiptText className="size-4" /></span>}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <BillingEmpty icon={FileText} title="No transactions yet" description="Charges will appear here after your first Pro checkout." />
+          <BillingEmpty icon={ReceiptText} title="No payments yet" description="Receipts will appear here after your first Pro payment." />
         )}
       </section>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage subscription</DialogTitle>
+            <DialogDescription>Plan and payment changes are handled securely by Lemon Squeezy.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 rounded-lg border border-border bg-secondary/25 p-4 text-sm">
+            <div><p className="text-xs text-muted-foreground">Current plan</p><p className="mt-1 font-semibold">{subscription?.planName ?? "GoPort Pro"}</p></div>
+            <div><p className="text-xs text-muted-foreground">Status</p><p className="mt-1 font-semibold">{subscription ? formatSubscriptionStatus(subscription.status) : "Active"}</p></div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="outline">Close</Button></DialogClose>
+            <Button type="button" onClick={() => void openPortal()} disabled={busy !== null} className="bg-primary text-primary-foreground shadow-none">{busy === "manage" ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}{busy === "manage" ? "Opening billing" : "Continue to Lemon Squeezy"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1098,22 +1104,18 @@ function PlanLimit({ value, label, emphasized = false }: { value: string; label:
   return <div className="min-w-0 px-4 py-4 sm:px-5"><p className={`truncate text-sm font-semibold ${emphasized ? "text-primary" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>;
 }
 
-function BillingPlanRow({ name, description, price, period, badge, features, current, cancelledCurrent, hasActivePro, available, busy, disabled, onSelect }: { name: string; description: string; price: string; period: "month" | "year"; badge?: string; features: string[]; current: boolean; cancelledCurrent: boolean; hasActivePro: boolean; available: boolean; busy: boolean; disabled: boolean; onSelect: () => void }) {
-  const buttonLabel = current ? (cancelledCurrent ? "Resume plan" : "Current plan") : hasActivePro ? `Switch to ${name.toLowerCase()}` : name === "Monthly" ? "Start 7-day trial" : "Subscribe yearly";
+function BillingCycleRow({ name, description, price, period, badge, available, busy, disabled, onSelect }: { name: "Monthly" | "Yearly"; description: string; price: string; period: "month" | "year"; badge?: string; available: boolean; busy: boolean; disabled: boolean; onSelect: () => void }) {
   return (
-    <div className={`grid gap-5 px-5 py-6 sm:px-6 xl:grid-cols-[minmax(180px,0.8fr)_minmax(360px,1.5fr)_190px] xl:items-center ${badge ? "border-l-[3px] border-l-primary bg-primary/[0.035]" : "border-l-[3px] border-l-transparent"}`}>
+    <div className={`grid gap-4 px-5 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6 ${badge ? "border-l-[3px] border-l-primary bg-primary/[0.035]" : "border-l-[3px] border-l-transparent"}`}>
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2"><h4 className="text-lg font-semibold">Pro {name}</h4>{badge && <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{badge}</span>}{current && <span className="rounded-md bg-secondary px-2 py-1 text-xs font-semibold text-muted-foreground">Your plan</span>}</div>
-        <p className="mt-2 text-sm leading-5 text-muted-foreground">{description}</p>
+        <div className="flex flex-wrap items-center gap-2"><h4 className="text-sm font-semibold">Pay {name.toLowerCase()}</h4>{badge && <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{badge}</span>}</div>
+        <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{description}</p>
       </div>
-      <ul className="grid gap-x-5 gap-y-2 text-sm text-muted-foreground sm:grid-cols-2">
-        {features.map((feature) => <li key={feature} className="flex items-center gap-2"><Check className="size-3.5 shrink-0 text-primary" /><span>{feature}</span></li>)}
-      </ul>
-      <div className="flex flex-col gap-3 xl:items-stretch xl:text-right">
-        <div><span className="font-mono text-2xl font-semibold text-foreground">{price}</span><span className="ml-1 text-sm text-muted-foreground">/{period}</span></div>
-        <Button type="button" variant={badge && !current ? "default" : "outline"} onClick={onSelect} disabled={disabled || (current && !cancelledCurrent)} className={`h-10 justify-center rounded-lg shadow-none ${badge && !current ? "bg-primary text-primary-foreground" : "bg-transparent"}`}>{busy ? <Loader2 className="size-4 animate-spin" /> : current && !cancelledCurrent ? <Check className="size-4" /> : <ChevronRight className="size-4" />}{buttonLabel}</Button>
-        {!available && !hasActivePro && <p className="text-xs text-amber-700 dark:text-amber-300">Temporarily unavailable</p>}
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <div className="text-right"><span className="font-mono text-xl font-semibold text-foreground">{price}</span><span className="ml-1 text-xs text-muted-foreground">/{period}</span></div>
+        <Button type="button" variant={badge ? "default" : "outline"} onClick={onSelect} disabled={disabled || !available} className={`h-9 min-w-36 justify-center rounded-lg text-xs shadow-none ${badge ? "bg-primary text-primary-foreground" : "bg-transparent"}`}>{busy ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}{name === "Monthly" ? "Start trial" : "Choose yearly"}</Button>
       </div>
+      {!available && <p className="text-xs text-amber-700 dark:text-amber-300 sm:col-span-2 sm:text-right">Temporarily unavailable</p>}
     </div>
   );
 }

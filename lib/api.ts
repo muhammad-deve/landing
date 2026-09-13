@@ -268,13 +268,6 @@ export interface TokenItem {
   created?: string;
 }
 
-export interface BillingCard {
-  id: string;
-  brand: string;
-  last4: string;
-  isDefault: boolean;
-}
-
 export interface BillingTransaction {
   id: string;
   amountCents: number;
@@ -282,8 +275,6 @@ export interface BillingTransaction {
   description: string;
   status: "paid" | "pending" | "failed" | "refunded" | "partially_refunded";
   chargedAt: string;
-  cardBrand: string;
-  cardLast4: string;
   invoiceUrl?: string;
 }
 
@@ -314,7 +305,6 @@ export interface BillingData {
   availablePlans: Array<"monthly" | "yearly">;
   plan: PlanLimits;
   subscription: BillingSubscription | null;
-  cards: BillingCard[];
   transactions: BillingTransaction[];
 }
 
