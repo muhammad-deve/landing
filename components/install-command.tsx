@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { copyText } from "@/lib/clipboard";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
+const RELEASE_DOWNLOAD_URL = `${GITHUB_URL}/releases/latest/download`;
 
 const PLATFORMS = [
   {
@@ -16,7 +17,10 @@ const PLATFORMS = [
     icon: AppleIcon,
     prompt: "$",
     command: "brew tap muhammad-deve/goport && brew install goport",
-    download: `${GITHUB_URL}#installation`,
+    downloads: [
+      { label: "Apple Silicon", href: `${RELEASE_DOWNLOAD_URL}/goport-darwin-arm64` },
+      { label: "Intel Mac", href: `${RELEASE_DOWNLOAD_URL}/goport-darwin-amd64` },
+    ],
   },
   {
     id: "windows",
@@ -24,7 +28,7 @@ const PLATFORMS = [
     icon: WindowsIcon,
     prompt: ">",
     command: "choco install goport",
-    download: "https://community.chocolatey.org/packages/goport",
+    downloads: [{ label: "Download for Windows", href: `${RELEASE_DOWNLOAD_URL}/goport-windows-amd64.exe` }],
   },
   {
     id: "linux",
@@ -32,7 +36,7 @@ const PLATFORMS = [
     icon: LinuxIcon,
     prompt: "$",
     command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport",
-    download: `${GITHUB_URL}/releases/latest/download/goport-linux-amd64`,
+    downloads: [{ label: "Download for Linux", href: `${RELEASE_DOWNLOAD_URL}/goport-linux-amd64` }],
   },
 ] as const;
 
@@ -95,14 +99,17 @@ export function InstallCommand() {
 
         return (
           <TabsContent key={platform.id} value={platform.id} className="mt-0">
-            <div className="grid gap-3 p-3 sm:grid-cols-[13.5rem_minmax(0,1fr)] sm:items-center sm:p-4">
-              <Button asChild variant="outline" className="h-12 w-full justify-start rounded-xl border-border bg-background px-4 text-foreground shadow-none transition-[background-color,transform] hover:bg-secondary hover:text-foreground active:scale-[0.98] dark:border-white dark:bg-white dark:text-[#102124] dark:hover:bg-white/90 dark:hover:text-[#102124]">
-                <a href={platform.download} target="_blank" rel="noreferrer noopener">
-                  <span className="inline-flex min-w-0 items-center gap-2 font-semibold"><Icon className="size-4 shrink-0" /><span className="truncate">Download for {platform.label}</span></span>
-                  <Download className="ml-auto size-4 shrink-0 text-primary dark:text-[#0b9f6e]" />
-                </a>
-              </Button>
-
+            <div className="space-y-3 p-3 sm:p-4">
+              <div className={`grid gap-2 ${platform.downloads.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                {platform.downloads.map((download) => (
+                  <Button key={download.href} asChild variant="outline" className="h-12 w-full justify-start rounded-xl border-border bg-background px-4 text-foreground shadow-none transition-[background-color,transform] hover:bg-secondary hover:text-foreground active:scale-[0.98] dark:border-white dark:bg-white dark:text-[#102124] dark:hover:bg-white/90 dark:hover:text-[#102124]">
+                    <a href={download.href}>
+                      <span className="inline-flex min-w-0 items-center gap-2 font-semibold"><Icon className="size-4 shrink-0" /><span className="truncate">{download.label}</span></span>
+                      <Download className="ml-auto size-4 shrink-0 text-primary dark:text-[#0b9f6e]" />
+                    </a>
+                  </Button>
+                ))}
+              </div>
               <div className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-xl border border-border bg-secondary/30 px-4 py-3 font-mono text-[11px] text-foreground dark:border-white/10 dark:bg-black/30 dark:text-white sm:text-xs">
                 <span className="select-none text-primary dark:text-[#38d996]">{platform.prompt}</span>
                 <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap leading-5 text-foreground/85 [scrollbar-width:none] dark:text-white/85">{platform.command}</code>
