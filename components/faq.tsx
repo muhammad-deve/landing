@@ -30,18 +30,6 @@ export const FAQS = [
     q: "Can I inspect and replay requests?",
     a: "Yes. GoPort runs a local dashboard that records request and response details for the active tunnel. You can review headers and bodies, check status codes and latency, and replay a captured request against your local app.",
   },
-  {
-    q: "Is GoPort an open-source ngrok alternative?",
-    a: "GoPort's CLI and tunnel server are available under the MIT License, and the infrastructure can be self-hosted. GoPort focuses on a direct developer workflow for public HTTPS tunnels, local request inspection, and memorable subdomains.",
-  },
-  {
-    q: "Can I cancel a paid plan at any time?",
-    a: "Yes. You can cancel a paid plan at any time. Your plan stays active through the current billing period and will not renew after that period ends.",
-  },
-  {
-    q: "Is a GoPort tunnel private?",
-    a: "Traffic uses HTTPS, but the public URL is reachable from the internet. Keep authentication enabled in your app, avoid exposing sensitive development tools, and close the tunnel when you no longer need it.",
-  },
 ] as const;
 
 export function Faq() {
