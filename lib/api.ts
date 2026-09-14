@@ -287,7 +287,6 @@ export interface BillingSubscription {
   interval: "month" | "year";
   currentPeriodEnd?: string;
   cancelAtPeriodEnd: boolean;
-  portalAvailable: boolean;
 }
 
 export interface PlanLimits {
@@ -383,17 +382,29 @@ export async function createBillingCheckout(
   return (await res.json()) as { url: string };
 }
 
-export async function getBillingPortal(authToken: string): Promise<{ url: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
-    headers: { Authorization: authToken },
-    cache: "no-store",
+export async function changeBillingSubscriptionPlan(authToken: string, plan: "yearly"): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: authToken },
+    body: JSON.stringify({ plan }),
   });
 
   if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
   if (!res.ok) {
-    throw new Error(await parseError(res, "Couldn't open billing management. Please try again."));
+    throw new Error(await parseError(res, "Couldn't change your billing cycle. Please try again."));
   }
-  return (await res.json()) as { url: string };
+}
+
+export async function cancelBillingSubscription(authToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, {
+    method: "DELETE",
+    headers: { Authorization: authToken },
+  });
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't cancel your subscription. Please try again."));
+  }
 }
 
 /** Fetch privacy-safe, time-bucketed traffic for every tunnel owned by the user. */
