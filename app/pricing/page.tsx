@@ -18,7 +18,7 @@ export default function PricingPage() {
         title="Start with a tunnel. Pay when you need more room."
         description="Every plan includes HTTPS, WebSockets, and the local request inspector. Upgrade for more tunnels, traffic, devices, and a custom GoPort subdomain."
         command="$ goport http 8080"
-        output="Free: 2 tunnels / 5 GB  →  Pro: 10 tunnels / 70 GB"
+        output="Free: 1 tunnel / 5 GB  →  Pro: 10 tunnels / 70 GB"
         primaryLabel="Start free"
       />
       <Pricing />

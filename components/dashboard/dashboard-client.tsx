@@ -906,7 +906,7 @@ type BillingAction = "monthly" | "yearly" | "cancel";
 type SubscriptionConfirmation = "yearly" | "cancel";
 
 const PLAN_LIMIT_COMPARISON = [
-  { label: "Active tunnels", free: "2", pro: "10" },
+  { label: "Active tunnels", free: "1", pro: "10" },
   { label: "Monthly traffic", free: "5 GB", pro: "70 GB" },
   { label: "Device tokens", free: "1", pro: "5" },
   { label: "Custom subdomains", free: "Not included", pro: "Included" },
@@ -966,7 +966,7 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
     }
   };
 
-  let subscriptionCopy = "Free includes two active tunnels, 5 GB per month, one device token, and no custom subdomains.";
+  let subscriptionCopy = "Free includes one active tunnel, 5 GB per month, one device token, and no custom subdomains.";
   if (subscription) {
     const periodEnd = subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : "the end of this billing period";
     if (subscription.cancelAtPeriodEnd) subscriptionCopy = `Pro access continues until ${periodEnd}.`;

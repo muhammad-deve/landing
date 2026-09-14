@@ -48,7 +48,7 @@ const INTEGRATIONS = [
 ];
 
 const PLANS = [
-  { name: "Free", price: "$0", description: "Run a local project through public HTTPS at no cost.", billingNote: "No credit card required", items: ["Up to 2 active tunnels", "5 GB monthly traffic", "Random GoPort URLs", "Automatic HTTPS", "WebSocket support", "Local Request Inspector", "1 device"], action: "Create free account" },
+  { name: "Free", price: "$0", description: "Run a local project through public HTTPS at no cost.", billingNote: "No credit card required", items: ["1 active tunnel", "5 GB monthly traffic", "Random GoPort URL only", "Automatic HTTPS", "WebSocket support", "Local Request Inspector", "1 device"], action: "Create free account" },
   { name: "Pro monthly", price: "$2.99", suffix: "/ month", description: "Use every Pro feature without a yearly commitment.", billingNote: "Billed monthly. Cancel anytime.", items: ["Up to 10 active tunnels", "70 GB monthly traffic", "Custom GoPort subdomains", "Automatic HTTPS", "WebSocket support", "Local Request Inspector", "Up to 5 devices"], action: "Start 7-day free trial" },
   { name: "Pro yearly", price: "$19.99", originalPrice: "$35.88", suffix: "/ year", description: "Keep Pro for a full year at the lowest monthly price.", billingNote: "Billed yearly. Cancel anytime. Save 44%.", items: ["Up to 10 active tunnels", "70 GB monthly traffic", "Custom GoPort subdomains", "Automatic HTTPS", "WebSocket support", "Local Request Inspector", "Up to 5 devices"], action: "Choose yearly", popular: true, badge: "Best value" },
 ];
