@@ -50,6 +50,57 @@ function detectPlatform(): PlatformId | null {
   return null;
 }
 
+/**
+ * One-line install command for the detected OS, with a copy button. Used in the
+ * hero, where the full three-tab installer would be too heavy but the
+ * copy-paste-done moment is what most visitors are actually looking for.
+ */
+export function InstallCommandCompact({ className = "" }: { className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const [platformId, setPlatformId] = useState<PlatformId>("macos");
+
+  useEffect(() => {
+    const detected = detectPlatform();
+    if (detected) setPlatformId(detected);
+  }, []);
+
+  const platform = PLATFORMS.find((entry) => entry.id === platformId) ?? PLATFORMS[0];
+  const Icon = platform.icon;
+
+  const copy = async () => {
+    if (await copyText(platform.command)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
+  return (
+    <div className={className}>
+      <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border bg-card/80 px-3 py-2.5 font-mono text-xs shadow-sm sm:px-4 sm:py-3">
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="select-none text-primary">{platform.prompt}</span>
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-foreground/85 [scrollbar-width:none]">
+          {platform.command}
+        </code>
+        <button
+          type="button"
+          onClick={copy}
+          aria-label={`Copy ${platform.label} installation command`}
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-[color,background-color,transform] hover:bg-secondary hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Detected {platform.label}.{" "}
+        <a href="#quickstart" className="underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-primary">
+          All platforms and direct downloads
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export function InstallCommand() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [platformId, setPlatformId] = useState<PlatformId>("macos");

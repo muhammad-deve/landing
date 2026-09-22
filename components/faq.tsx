@@ -23,18 +23,22 @@ export const FAQS = [
     a: "Yes. Request an available GoPort subdomain with the --custom flag when you need a stable callback or preview URL. Use --reset when you want GoPort to assign a new random subdomain.",
   },
   {
-    q: "Does GoPort support WebSockets?",
-    a: "Yes. The GoPort CLI detects HTTP upgrade requests and switches to bidirectional forwarding, allowing WebSocket connections to pass through the same public tunnel.",
+    q: "What happens when I hit the 5 GB Free limit?",
+    a: "GoPort stops opening new tunnels for the rest of the calendar month and the CLI tells you the limit was reached. Nothing is deleted and no charge is applied. Your allowance resets at the start of the next month, or you can upgrade to Pro for 70 GB per month.",
   },
   {
-    q: "Can I inspect and replay requests?",
-    a: "Yes. GoPort runs a local dashboard that records request and response details for the active tunnel. You can review headers and bodies, check status codes and latency, and replay a captured request against your local app.",
+    q: "Can I self-host GoPort for free?",
+    a: "Yes. GoPort is MIT licensed and the tunnel server is in the same repository as the CLI. Run it on your own machine with your own wildcard domain and there are no plan limits, no account, and no payment. The hosted plans exist for people who would rather not run the server themselves.",
+  },
+  {
+    q: "How do payments work, and can I cancel?",
+    a: "Payments are processed by Lemon Squeezy, our merchant of record, which accepts major credit and debit cards and PayPal. You can cancel Pro at any time from your dashboard; your plan stays active until the end of the period you have already paid for, and you are not charged again. If a charge looks wrong, email us and we will resolve it through Lemon Squeezy. Click, Payme, and MultiCard appear on this site as examples of webhooks you can test through a tunnel, not as GoPort payment methods.",
   },
 ] as const;
 
 export function Faq() {
   return (
-    <section id="faq" className="mx-auto grid w-full max-w-7xl scroll-mt-20 gap-10 px-5 py-20 sm:px-7 lg:grid-cols-[0.65fr_1.35fr] lg:py-28">
+    <section id="faq" className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 sm:px-7 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:py-18">
       <SectionHeader
         eyebrow="FAQ"
         title="What developers ask before opening a tunnel."

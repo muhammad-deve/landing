@@ -108,7 +108,14 @@
 
 @layer base {
   * { @apply border-border outline-ring/50; }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    overflow-x: clip;
+    /* Clears the fixed site nav (4rem) and the sticky dashboard header (5rem)
+       so neither an anchor jump nor keyboard focus lands underneath them.
+       WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum). */
+    scroll-padding-top: 5.5rem;
+  }
   body { @apply bg-background text-foreground; min-width: 320px; }
   ::selection { background: color-mix(in srgb, var(--primary) 28%, transparent); }
 

@@ -4,20 +4,25 @@ import { GoPortLogo } from "@/components/goport-logo";
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 const LICENSE_URL = `${GITHUB_URL}/blob/main/LICENSE`;
 
+// Single source of truth for the public contact address. Switching to a
+// goport.uz mailbox is a one-line change here once that mailbox exists.
+const CONTACT_EMAIL = "muhammadgo.deve@gmail.com";
+
 const FOOTER_LINKS = [
   {
     title: "Product",
     links: [
       { label: "Product overview", href: "/product" },
-      { label: "Pricing", href: "/#pricing" },
-      { label: "Use cases", href: "/#use-cases" },
-      { label: "Quickstart", href: "/#quickstart" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Use cases", href: "/use-cases" },
     ],
   },
   {
     title: "Developers",
     links: [
-      { label: "Documentation", href: "/#docs" },
+      { label: "Documentation", href: "/docs" },
+      { label: "Quickstart", href: "/quickstart" },
+      { label: "Self-hosting guide", href: "/self-hosting" },
       { label: "Source code", href: GITHUB_URL, external: true },
       { label: "MIT license", href: LICENSE_URL, external: true },
     ],
@@ -26,7 +31,7 @@ const FOOTER_LINKS = [
     title: "GoPort",
     links: [
       { label: "FAQ", href: "/#faq" },
-      { label: "Contact", href: "mailto:muhammadgo.deve@gmail.com" },
+      { label: "Contact", href: `mailto:${CONTACT_EMAIL}` },
       { label: "Dashboard", href: "/dashboard" },
     ],
   },
@@ -83,7 +88,7 @@ export function SiteFooter() {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a href={LICENSE_URL} target="_blank" rel="noreferrer noopener" className="transition-colors hover:text-foreground">MIT licensed</a>
             <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"><Github className="size-3.5" />GitHub</a>
-            <a href="mailto:muhammadgo.deve@gmail.com" className="transition-colors hover:text-foreground">muhammadgo.deve@gmail.com</a>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-foreground">{CONTACT_EMAIL}</a>
           </div>
         </div>
       </div>

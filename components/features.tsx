@@ -31,7 +31,7 @@ const FEATURES = [
 export function Features() {
   return (
     <section id="features" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-7 lg:py-28">
-      <div className="grid gap-10 lg:grid-cols-[0.65fr_1.35fr] lg:items-start">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-start">
         <SectionHeader
           eyebrow="Product"
           title="A localhost tunnel built for the development loop."

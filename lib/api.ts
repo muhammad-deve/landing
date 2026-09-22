@@ -266,6 +266,8 @@ export interface TokenItem {
   name: string;
   token: string;
   created?: string;
+  /** When this token last authenticated a tunnel. Absent means never used. */
+  lastUsed?: string;
 }
 
 export interface BillingTransaction {
@@ -276,6 +278,8 @@ export interface BillingTransaction {
   status: "paid" | "pending" | "failed" | "refunded" | "partially_refunded";
   chargedAt: string;
   invoiceUrl?: string;
+  /** "trial" marks a zero-amount bookkeeping row, so it is never shown as a payment. */
+  kind?: "charge" | "trial";
 }
 
 export interface BillingSubscription {
@@ -305,6 +309,10 @@ export interface BillingData {
   plan: PlanLimits;
   subscription: BillingSubscription | null;
   transactions: BillingTransaction[];
+  /** True once this account has consumed its one free trial. */
+  trialUsed?: boolean;
+  /** True when a Lemon Squeezy customer portal link can be minted. */
+  portalAvailable?: boolean;
 }
 
 export interface DashboardData {
@@ -313,6 +321,10 @@ export interface DashboardData {
   avatar: string;
   totalRequests: number;
   totalBytes: number;
+  /** Traffic used since the 1st of the current UTC month — what the plan limit measures. */
+  monthBytes?: number;
+  /** When the monthly allowance rolls over (RFC 3339). */
+  monthResetsAt?: string;
   domains: DashboardDomain[];
   tokens: TokenItem[];
   billing?: BillingData;
@@ -405,6 +417,23 @@ export async function cancelBillingSubscription(authToken: string): Promise<void
   if (!res.ok) {
     throw new Error(await parseError(res, "Couldn't cancel your subscription. Please try again."));
   }
+}
+
+/**
+ * Mint a short-lived Lemon Squeezy customer portal link. Fetched on click
+ * rather than with the dashboard because the URL is signed and expires.
+ */
+export async function getBillingPortalUrl(authToken: string): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
+    headers: { Authorization: authToken },
+  });
+
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (!res.ok) {
+    throw new Error(await parseError(res, "Couldn't open the billing portal. Please try again."));
+  }
+  const data = (await res.json()) as { url: string };
+  return data.url;
 }
 
 /** Fetch privacy-safe, time-bucketed traffic for every tunnel owned by the user. */

@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 // Bump this when page content meaningfully changes. A fixed date keeps the
 // signal honest: using `new Date()` would claim every page changed on every
 // build, which search engines learn to ignore.
-const LAST_MODIFIED = new Date("2026-09-11T00:00:00.000Z");
+const LAST_MODIFIED = new Date("2026-09-22T00:00:00.000Z");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://goport.uz";
@@ -19,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
     { path: "/quickstart", changeFrequency: "monthly", priority: 0.8 },
     { path: "/docs", changeFrequency: "monthly", priority: 0.8 },
+    { path: "/self-hosting", changeFrequency: "monthly", priority: 0.8 },
   ];
 
   return routes.map(({ path, changeFrequency, priority }) => ({

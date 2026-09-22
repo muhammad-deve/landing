@@ -38,7 +38,7 @@ export const metadata: Metadata = {
       "Create a public HTTPS URL for a local app, API, or webhook handler with one command.",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "GoPort: Expose Localhost to the Internet with HTTPS",
     description:
       "Create a public HTTPS URL for a local app, API, or webhook handler with one command.",

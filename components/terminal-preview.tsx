@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Pause, Play } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 const COMMAND = "goport http 8080";
 
 const REQUESTS = [
-  { time: "14:32:15", method: "GET", path: "/api/users", status: "202 OK" },
-  { time: "14:32:08", method: "POST", path: "/api/auth/login", status: "202 OK" },
-  { time: "14:31:52", method: "PUT", path: "/api/users/42", status: "202 OK" },
-  { time: "14:31:45", method: "DELETE", path: "/api/posts/17", status: "202 OK" },
+  { time: "14:32:15", method: "GET", path: "/api/users", status: "200 OK" },
+  { time: "14:32:08", method: "POST", path: "/api/auth/login", status: "200 OK" },
+  { time: "14:31:52", method: "PUT", path: "/api/users/42", status: "200 OK" },
+  { time: "14:31:45", method: "DELETE", path: "/api/posts/17", status: "200 OK" },
 ];
 
 interface TerminalPreviewProps {
@@ -19,14 +20,35 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
   const [commandLength, setCommandLength] = useState(animated ? 0 : COMMAND.length);
   const [detailsVisible, setDetailsVisible] = useState(!animated);
   const [requestCount, setRequestCount] = useState(animated ? 0 : REQUESTS.length);
+  const [paused, setPaused] = useState(false);
+  // Hover or keyboard focus suspends the loop so the pane holds still while
+  // someone is actually reading it.
+  const [suspended, setSuspended] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (!animated) return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, [animated]);
+
+  /** Final, fully readable state — what a stopped or reduced-motion pane shows. */
+  const showComplete = useCallback(() => {
+    setCommandLength(COMMAND.length);
+    setDetailsVisible(true);
+    setRequestCount(REQUESTS.length);
+  }, []);
+
+  const stopped = paused || suspended;
 
   useEffect(() => {
     if (!animated) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setCommandLength(COMMAND.length);
-      setDetailsVisible(true);
-      setRequestCount(REQUESTS.length);
+    if (reducedMotion || stopped) {
+      showComplete();
       return;
     }
 
@@ -67,20 +89,42 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
       if (typeTimer) window.clearInterval(typeTimer);
       timeouts.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [animated]);
+  }, [animated, reducedMotion, stopped, showComplete]);
+
+  // Nothing moves when the caller disabled animation or the OS asks for reduced
+  // motion, so no stop control is needed in those cases.
+  const showPauseControl = animated && !reducedMotion;
 
   return (
-    <div className="terminal-surface w-full overflow-hidden rounded-[1.35rem] border border-primary/20 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.72)]">
+    <div
+      className="terminal-surface w-full min-w-0 overflow-hidden rounded-[1.35rem] border border-primary/20 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.72)]"
+      onMouseEnter={() => setSuspended(true)}
+      onMouseLeave={() => setSuspended(false)}
+      onFocusCapture={() => setSuspended(true)}
+      onBlurCapture={() => setSuspended(false)}
+    >
       <div className="flex items-center gap-2 border-b border-primary/15 bg-primary/[0.025] px-5 py-3">
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5" aria-hidden>
           <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
           <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
           <span className="h-3 w-3 rounded-full bg-[#27ca40]" />
         </div>
         <span className="ml-2 font-mono text-xs text-muted-foreground">terminal</span>
+        {showPauseControl && (
+          <button
+            type="button"
+            onClick={() => setPaused((value) => !value)}
+            aria-pressed={paused}
+            aria-label={paused ? "Play the terminal demo" : "Pause the terminal demo"}
+            title={paused ? "Play the terminal demo" : "Pause the terminal demo"}
+            className="ml-auto flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+          </button>
+        )}
       </div>
 
-      <div className="min-h-[19rem] overflow-x-auto p-5 text-left font-mono text-[13px] leading-relaxed sm:min-h-[22rem] sm:p-6 sm:text-sm">
+      <div className="min-h-[19rem] p-5 text-left font-mono text-[13px] leading-relaxed sm:min-h-[22rem] sm:p-6 sm:text-sm">
         <div className="flex">
           <span className="text-muted-foreground">$</span>
           <span className="ml-2 font-semibold text-foreground">{COMMAND.slice(0, commandLength)}</span>
@@ -88,35 +132,32 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
 
         {detailsVisible && (
           <div className={animated ? "animate-in fade-in duration-150" : undefined}>
-            <div className="mt-6 min-w-[36rem] space-y-1">
+            <div className="mt-6 space-y-1">
               <TerminalValue label="Dashboard" value="http://127.0.0.1:4040" />
               <TerminalValue label="Region" value="Europe (eu)" />
-              <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
-                <span className="text-muted-foreground">Status</span>
-                <span>
-                  <span className="text-primary">online</span>
-                  <span className="text-muted-foreground"> (133ms)</span>
-                </span>
-              </div>
-              <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
-                <span className="text-muted-foreground">Forwarding</span>
-                <span>
-                  <span className="text-primary">https://abc123.goport.uz</span>
-                  <span className="text-muted-foreground"> → </span>
-                  <span className="font-semibold text-foreground">localhost:8080</span>
-                </span>
-              </div>
+              <TerminalRow label="Status">
+                <span className="text-primary">online</span>
+                <span className="text-muted-foreground"> (133ms)</span>
+              </TerminalRow>
+              <TerminalRow label="Forwarding">
+                <span className="break-all text-primary">https://abc123.goport.uz</span>
+                <span className="text-muted-foreground"> &rarr; </span>
+                <span className="break-all font-semibold text-foreground">localhost:8080</span>
+              </TerminalRow>
             </div>
 
-            <div className="mt-6 min-w-[36rem]">
+            <div className="mt-6">
               <div className="font-semibold text-foreground">HTTP Requests</div>
               <div className="text-muted-foreground/80">-------------</div>
               <div className="mt-2 space-y-1 text-xs">
                 {REQUESTS.slice(0, requestCount).map((request) => (
-                  <div key={`${request.time}-${request.method}`} className={animated ? "grid animate-in grid-cols-[5rem_4.5rem_12.5rem_4.5rem] items-center fade-in slide-in-from-bottom-1 duration-300" : "grid grid-cols-[5rem_4.5rem_12.5rem_4.5rem] items-center"}>
+                  <div
+                    key={`${request.time}-${request.method}`}
+                    className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-2 sm:gap-x-3 ${animated ? "animate-in fade-in slide-in-from-bottom-1 duration-300" : ""}`}
+                  >
                     <span className="text-muted-foreground">{request.time}</span>
                     <span className="text-muted-foreground">{request.method}</span>
-                    <span className="font-semibold text-foreground">{request.path}</span>
+                    <span className="truncate font-semibold text-foreground">{request.path}</span>
                     <span className="font-semibold text-primary">{request.status}</span>
                   </div>
                 ))}
@@ -129,11 +170,23 @@ export function TerminalPreview({ animated = true }: TerminalPreviewProps) {
   );
 }
 
+/**
+ * Label/value row. The value column is `minmax(0,1fr)` rather than a fixed
+ * `24rem` so long URLs wrap inside the card instead of widening the page.
+ */
+function TerminalRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2 sm:grid-cols-[7rem_minmax(0,1fr)]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="min-w-0">{children}</span>
+    </div>
+  );
+}
+
 function TerminalValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[10rem_minmax(24rem,1fr)]">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground">{value}</span>
-    </div>
+    <TerminalRow label={label}>
+      <span className="break-all font-semibold text-foreground">{value}</span>
+    </TerminalRow>
   );
 }

@@ -4,7 +4,6 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
-  ExternalLink,
   KeyRound,
   LogIn,
   Server,
@@ -17,8 +16,6 @@ import { SectionHeader } from "@/components/section-header";
 import { TerminalCommand } from "@/components/terminal-command";
 import { TunnelDiagram } from "@/components/tunnel-diagram";
 import { UseCaseWorkbench } from "@/components/use-case-workbench";
-
-const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 const INTEGRATIONS = [
   { name: "Stripe", icon: "https://cdn.simpleicons.org/stripe/635BFF" },
@@ -61,8 +58,8 @@ export function CompatibleServices() {
   ];
 
   return (
-    <section id="integrations" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
-      <div className="grid gap-10 xl:grid-cols-[0.72fr_1.28fr] xl:items-center xl:gap-16">
+    <section id="integrations" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] xl:items-center xl:gap-16">
         <SectionHeader
           eyebrow="Webhook testing"
           title="Debug production webhooks on localhost instantly."
@@ -70,7 +67,7 @@ export function CompatibleServices() {
           align="left"
         />
 
-        <div className="route-surface overflow-hidden rounded-[1.5rem] border border-border shadow-[0_24px_70px_-45px_rgba(8,17,19,0.5)]">
+        <div className="route-surface min-w-0 overflow-hidden rounded-[1.5rem] border border-border shadow-[0_24px_70px_-45px_rgba(8,17,19,0.5)]">
           <div className="flex items-center justify-between border-b border-border px-5 py-3.5 text-xs sm:px-6">
             <span className="inline-flex items-center gap-2 font-medium text-foreground"><span className="size-2 rounded-full bg-primary" />Webhook delivery</span>
             <span className="font-mono text-primary">200 OK</span>
@@ -86,7 +83,7 @@ export function CompatibleServices() {
                     <span className="mt-1 block text-sm font-semibold text-foreground">Stripe</span>
                   </span>
                 </div>
-                <code className="mt-3 block whitespace-nowrap text-[11px] text-muted-foreground" title="check.session.completed">
+                <code className="mt-3 block truncate text-[11px] text-muted-foreground" title="check.session.completed">
                   check.session.completed
                 </code>
               </div>
@@ -133,7 +130,7 @@ export function CompatibleServices() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-background/55 px-4 py-3 font-mono text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">POST checkout.session.completed</span>
+              <span className="font-semibold text-foreground">POST check.session.completed</span>
               <span className="inline-flex items-center gap-1.5">
                 <span>
                   <span className="text-primary">✓</span> delivered to <span className="font-semibold text-foreground">localhost:8080/stripe</span>
@@ -183,7 +180,7 @@ export function CompatibleServices() {
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
+    <section id="use-cases" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
       <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-start">
         <SectionHeader eyebrow="Use cases" title="A public URL for work that still runs locally." description="See how a localhost tunnel fits into webhook development, payment testing, OAuth, mobile apps, and client reviews." align="left" />
         <UseCaseWorkbench />
@@ -194,7 +191,7 @@ export function UseCases() {
 
 export function Quickstart() {
   return (
-    <section id="quickstart" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-16 sm:px-7 lg:py-20">
+    <section id="quickstart" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
       <SectionHeader eyebrow="Get started" title="Open your first localhost tunnel." description="Install the CLI, authenticate once, and point GoPort at the port your application already uses." />
 
       <div className="mt-10 overflow-hidden rounded-[1.5rem] border border-border bg-card/60 shadow-[0_30px_90px_-60px_rgba(8,17,19,0.5)]">
@@ -240,13 +237,11 @@ export function Quickstart() {
 
 export function DocsOverview() {
   return (
-    <section id="docs" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
+    <section id="how-it-works" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-center lg:gap-16">
         <SectionHeader eyebrow="How it works" title="Follow every hop from the public URL to localhost." description="A request reaches GoPort, travels through the CLI's outbound tunnel, and arrives at the local port where your application is listening." align="left" />
-        <a
-          href={`${GITHUB_URL}#readme`}
-          target="_blank"
-          rel="noreferrer noopener"
+        <Link
+          href="/docs"
           className="group flex w-full items-center gap-4 rounded-2xl border border-border bg-card/60 p-5 text-left transition-colors hover:border-primary/50 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-w-[34rem] lg:justify-self-end"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -256,8 +251,8 @@ export function DocsOverview() {
             <span className="block text-sm font-semibold text-foreground">Read the GoPort docs</span>
             <span className="mt-1 block text-sm leading-5 text-muted-foreground">Installation, CLI commands, custom subdomains, self-hosting, and architecture.</span>
           </span>
-          <ExternalLink className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-        </a>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+        </Link>
       </div>
       <div className="mt-10"><TunnelDiagram /></div>
     </section>
@@ -266,9 +261,9 @@ export function DocsOverview() {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto w-full max-w-7xl scroll-mt-20 px-5 py-20 sm:px-7 lg:py-28">
+    <section id="pricing" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
       <SectionHeader eyebrow="Pricing" title="Start free. Upgrade when the work demands it." description="Use the Free plan for local development, or choose monthly or yearly Pro. Cancel any paid plan at any time." />
-      <div className="mt-14 grid gap-4 lg:grid-cols-3">
+      <div className="mt-10 grid gap-4 lg:grid-cols-3">
         {PLANS.map((plan) => (
           <article key={plan.name} className={`relative flex h-full flex-col rounded-2xl border p-7 ${plan.popular ? "border-primary bg-primary/[0.07]" : "border-border bg-card/60"}`}>
             {plan.popular && <span className="absolute right-6 top-6 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{plan.badge}</span>}

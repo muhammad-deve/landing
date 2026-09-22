@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   CartesianGrid,
@@ -24,6 +24,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  ExternalLink,
   Globe2,
   HardDrive,
   KeyRound,
@@ -83,6 +84,7 @@ import {
   type UsageSeries,
   API_BASE_URL,
   cancelBillingSubscription,
+  getBillingPortalUrl,
   changeBillingSubscriptionPlan,
   clearAuthSession,
   changePassword,
@@ -176,6 +178,7 @@ export function DashboardClient() {
   const [selectedDomain, setSelectedDomain] = useState<DashboardDomain | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [pendingTunnelAction, setPendingTunnelAction] = useState<{ action: "stop" | "delete"; domain: DashboardDomain } | null>(null);
+  const firstRunHandled = useRef(false);
 
   const handleAuthError = useCallback(() => {
     clearAuthSession();
@@ -240,6 +243,17 @@ export function DashboardClient() {
     return () => window.clearInterval(interval);
   }, [load]);
 
+  // An account with no tunnels has nothing to show on the Dashboard view, and
+  // the guide is the screen that actually gets them their first URL. Runs once,
+  // and never overrides a view the user asked for explicitly via the hash.
+  useEffect(() => {
+    if (firstRunHandled.current || !data) return;
+    firstRunHandled.current = true;
+    if (window.location.hash || data.domains.length > 0) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#docs`);
+    setView("docs");
+  }, [data]);
+
   const navigate = (next: DashboardView) => {
     if (next === view) {
       setMobileMenuOpen(false);
@@ -289,6 +303,7 @@ export function DashboardClient() {
   if (!data) return null;
 
   const activeDomains = data.domains.filter((domain) => domain.isCurrent);
+  const hasTunnels = data.domains.length > 0;
   const firstName = data.name?.trim().split(" ")[0] || "there";
   const currentCopy = VIEW_COPY[view];
 
@@ -319,14 +334,28 @@ export function DashboardClient() {
               <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">{currentCopy.description}</p>
             </div>
             <ThemeToggle />
-            <Button
-              onClick={() => navigate("docs")}
-              className="h-10 rounded-xl bg-primary px-3.5 text-primary-foreground shadow-none hover:bg-primary/90"
-            >
-              <BookOpen className="size-4" />
-              <span className="hidden sm:inline">Quick Start</span>
-              <span className="sm:hidden">Start</span>
-            </Button>
+            {/* Before the first tunnel exists the useful action is the guide;
+                afterwards it is creating another tunnel. The sidebar already
+                links to "Getting started" permanently, so this never duplicates it. */}
+            {hasTunnels ? (
+              <Button
+                onClick={() => setCreateOpen(true)}
+                className="h-10 rounded-xl bg-primary px-3.5 text-primary-foreground shadow-none hover:bg-primary/90"
+              >
+                <Plus className="size-4" />
+                <span className="hidden sm:inline">Create tunnel</span>
+                <span className="sm:hidden">New</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate("docs")}
+                className="h-10 rounded-xl bg-primary px-3.5 text-primary-foreground shadow-none hover:bg-primary/90"
+              >
+                <BookOpen className="size-4" />
+                <span className="hidden sm:inline">Quick Start</span>
+                <span className="sm:hidden">Start</span>
+              </Button>
+            )}
           </div>
         </header>
 
@@ -363,7 +392,13 @@ export function DashboardClient() {
             />
           )}
           {view === "billing" && (
-            <BillingPanel billing={data.billing} authToken={authToken} onChange={() => load(true)} onAuthError={handleAuthError} />
+            <BillingPanel
+              billing={data.billing}
+              authToken={authToken}
+              reservedCount={data.domains.filter((domain) => domain.isCustom).length}
+              onChange={() => load(true)}
+              onAuthError={handleAuthError}
+            />
           )}
           {view === "tokens" && (
             <TokensPanel
@@ -447,7 +482,9 @@ function DashboardSidebar({
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const active = item.id === view;
-                  const badge = item.id === "tunnels" ? data.domains.filter((domain) => domain.isCurrent).length : item.id === "tokens" ? data.tokens.length : 0;
+                  // Only the live tunnel count earns a badge. A token count is
+                  // static inventory and reads as an unread-notification dot.
+                  const badge = item.id === "tunnels" ? data.domains.filter((domain) => domain.isCurrent).length : 0;
                   return (
                     <button
                       key={item.id}
@@ -605,18 +642,47 @@ function NoActiveTunnel({ onCreate }: { onCreate: () => void }) {
 }
 
 function OperationalSummary({ data, activeCount }: { data: DashboardData; activeCount: number }) {
+  // The request/byte totals are lifetime figures while the chart only covers the
+  // selected range, so each card says which period it is counting. The traffic
+  // card reports month-to-date against the plan allowance, which is the number
+  // that actually decides whether the next tunnel opens.
+  const monthlyLimit = data.billing?.plan?.monthlyBytes ?? 0;
+  const monthBytes = data.monthBytes ?? 0;
+  const usedPercent = monthlyLimit > 0 ? Math.min((monthBytes / monthlyLimit) * 100, 100) : 0;
+
   const items = [
     { label: "Active tunnels", value: String(activeCount), icon: Radio },
-    { label: "Requests", value: formatNumber(data.totalRequests), icon: Activity },
-    { label: "Transferred", value: formatBytes(data.totalBytes), icon: HardDrive },
+    { label: "Requests · all time", value: formatNumber(data.totalRequests), icon: Activity },
+    {
+      label: monthlyLimit > 0 ? "Traffic · this month" : "Transferred · all time",
+      value: monthlyLimit > 0 ? `${formatBytes(monthBytes)} / ${formatBytes(monthlyLimit)}` : formatBytes(data.totalBytes),
+      icon: HardDrive,
+      percent: monthlyLimit > 0 ? usedPercent : undefined,
+    },
     { label: "Reserved domains", value: String(data.domains.filter((domain) => domain.isCustom).length), icon: Globe2 },
   ];
+
   return (
     <section className={`${PANEL} grid overflow-hidden rounded-[1.4rem] sm:grid-cols-2 xl:grid-cols-4`}>
-      {items.map(({ label, value, icon: Icon }, index) => (
+      {items.map(({ label, value, icon: Icon, percent }, index) => (
         <div key={label} className={`flex items-center gap-4 px-5 py-5 sm:px-6 ${index > 0 ? "border-t border-border/70 sm:border-t-0 sm:border-l" : ""} ${index === 2 ? "sm:border-l-0 sm:border-t xl:border-l xl:border-t-0" : ""}`}>
-          <Icon className="size-4 text-primary" />
-          <div><p className="font-mono text-xl font-semibold tracking-[-0.04em]">{value}</p><p className="mt-0.5 text-xs text-muted-foreground">{label}</p></div>
+          <Icon className="size-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-mono text-xl font-semibold tracking-[-0.04em]">{value}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{label}</p>
+            {percent !== undefined && (
+              <div
+                className="mt-2 h-1 w-full overflow-hidden rounded-full bg-secondary"
+                role="progressbar"
+                aria-valuenow={Math.round(percent)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Monthly traffic used"
+              >
+                <div className={`h-full rounded-full ${percent >= 90 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${Math.max(percent, percent > 0 ? 2 : 0)}%` }} />
+              </div>
+            )}
+          </div>
         </div>
       ))}
     </section>
@@ -637,7 +703,28 @@ function TunnelsPanel({ domains, onCreate, onSelect, onStop, onDelete, busyActio
           <Button onClick={onCreate} className="h-9 rounded-xl bg-primary text-primary-foreground shadow-none"><Plus className="size-4" />Create tunnel</Button>
         </div>
         {filtered.length ? (
-          <div className="overflow-x-auto">
+          <>
+            {/* Below md the table's six columns cut off "Last connected" and the
+                actions, which are the most useful part. Cards instead. */}
+            <div className="divide-y divide-border/65 md:hidden">
+              {filtered.map((domain) => (
+                <TunnelCard
+                  key={domain.subdomain}
+                  domain={domain}
+                  onSelect={() => onSelect(domain)}
+                  onStop={() => onStop(domain)}
+                  onDelete={() => onDelete(domain)}
+                  busyAction={busyAction}
+                />
+              ))}
+            </div>
+
+            <div
+              className="hidden overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:block"
+              tabIndex={0}
+              role="region"
+              aria-label="Tunnels table, scrollable horizontally"
+            >
             <table className="w-full min-w-[760px] text-left">
               <thead><tr className="border-b border-border/70 text-xs font-medium text-muted-foreground"><th className="px-5 py-3.5">Endpoint</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5">Local destination</th><th className="px-4 py-3.5">Traffic</th><th className="px-4 py-3.5">Last connected</th><th className="px-5 py-3.5 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-border/65">
@@ -645,7 +732,7 @@ function TunnelsPanel({ domains, onCreate, onSelect, onStop, onDelete, busyActio
                   <tr key={domain.subdomain} className="group hover:bg-secondary/45">
                     <td className="px-5 py-4"><button type="button" onClick={() => onSelect(domain)} className="block max-w-[17rem] text-left"><span className="block truncate font-mono text-sm font-semibold group-hover:text-primary">{domain.subdomain}.goport.uz</span><span className="mt-1 block text-xs text-muted-foreground">{domain.isCustom ? "Reserved subdomain" : "Generated subdomain"}</span></button></td>
                     <td className="px-4 py-4"><StatusPill online={domain.isCurrent} /></td>
-                    <td className="px-4 py-4 font-mono text-xs text-muted-foreground">127.0.0.1:{domain.localPort || "—"}</td>
+                    <td className="px-4 py-4 font-mono text-xs text-muted-foreground">{formatLocalTarget(domain)}</td>
                     <td className="px-4 py-4"><p className="font-mono text-xs font-medium">{formatNumber(domain.requests)} req</p><p className="mt-1 text-xs text-muted-foreground">{formatBytes(domain.bytes)}</p></td>
                     <td className="px-4 py-4 text-xs text-muted-foreground">{domain.lastActive ? formatRelative(domain.lastActive) : "Never"}</td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-1">
@@ -657,9 +744,60 @@ function TunnelsPanel({ domains, onCreate, onSelect, onStop, onDelete, busyActio
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         ) : <CompactEmpty onCreate={onCreate} message={filter === "all" ? undefined : `No ${filter} tunnels.`} />}
       </section>
+    </div>
+  );
+}
+
+/**
+ * Narrow-screen row for the Tunnels list. Carries the same information as a
+ * table row, including the actions, without a horizontal scrollbar.
+ */
+function TunnelCard({ domain, onSelect, onStop, onDelete, busyAction }: { domain: DashboardDomain; onSelect: () => void; onStop: () => void; onDelete: () => void; busyAction: string | null }) {
+  const stopping = busyAction === `stop:${domain.subdomain}`;
+  const deleting = busyAction === `delete:${domain.subdomain}`;
+
+  return (
+    <div className="px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
+          <span className="block truncate font-mono text-sm font-semibold">{domain.subdomain}.goport.uz</span>
+          <span className="mt-1 block text-xs text-muted-foreground">{domain.isCustom ? "Reserved subdomain" : "Generated subdomain"}</span>
+        </button>
+        <StatusPill online={domain.isCurrent} />
+      </div>
+
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        <div className="min-w-0">
+          <dt className="text-muted-foreground">Local destination</dt>
+          <dd className="mt-0.5 truncate font-mono font-medium">{formatLocalTarget(domain)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-muted-foreground">Last connected</dt>
+          <dd className="mt-0.5 truncate font-medium">{domain.lastActive ? formatRelative(domain.lastActive) : "Never"}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-muted-foreground">Traffic</dt>
+          <dd className="mt-0.5 truncate font-mono font-medium">{formatNumber(domain.requests)} req · {formatBytes(domain.bytes)}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+        {domain.isCurrent ? (
+          <Button type="button" variant="outline" onClick={onStop} disabled={stopping} className="h-9 flex-1 rounded-lg bg-transparent text-xs">
+            {stopping ? <Loader2 className="size-3.5 animate-spin" /> : <Square className="size-3.5" />}Stop
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" onClick={onDelete} disabled={deleting} className="h-9 flex-1 rounded-lg border-destructive/35 bg-transparent text-xs text-destructive hover:bg-destructive/8 hover:text-destructive">
+            {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}Delete
+          </Button>
+        )}
+        <IconCopyButton value={domain.url} label="Copy URL" />
+        <IconActionButton icon={ChevronRight} label="Tunnel details" onClick={onSelect} />
+      </div>
     </div>
   );
 }
@@ -785,7 +923,20 @@ function TunnelUsageChart({
         ) : error && !usage ? (
           <div className="flex h-[300px] flex-col items-center justify-center px-6 text-center"><p className="text-sm font-medium">Usage history is unavailable</p><p className="mt-1.5 text-xs text-muted-foreground">{error}</p><button type="button" onClick={() => setRetryKey((value) => value + 1)} className="mt-4 text-sm font-semibold text-primary hover:underline">Try again</button></div>
         ) : domains.length === 0 ? (
-          <div className="flex h-[300px] flex-col items-center justify-center px-6 text-center"><Activity className="size-5 text-primary" /><p className="mt-3 text-sm font-medium">No tunnel usage yet</p><p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">Create a tunnel and send traffic through it to start this chart.</p></div>
+          <div className="flex flex-col items-center px-6 py-8 text-center"><Activity className="size-5 text-primary" /><p className="mt-3 text-sm font-medium">No tunnel usage yet</p><p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">Create a tunnel and send traffic through it to start this chart.</p></div>
+        ) : !hasTraffic ? (
+          <div className="flex flex-col items-center px-6 py-8 text-center">
+            <Activity className="size-5 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium">No traffic in this period</p>
+            <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
+              Your tunnels recorded nothing in the last {range === "hour" ? "hour" : range === "day" ? "24 hours" : "7 days"}. Pick a wider range, or send a request through a tunnel.
+            </p>
+            {range !== "week" && (
+              <button type="button" onClick={() => { setUsage(null); setRange("week"); }} className="mt-3 text-xs font-semibold text-primary hover:underline">
+                Show the last 7 days
+              </button>
+            )}
+          </div>
         ) : (
           <>
             <div className="relative h-[300px] w-full">
@@ -827,9 +978,6 @@ function TunnelUsageChart({
                   ))}
                 </LineChart>
               </ResponsiveContainer>
-              {!hasTraffic && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-8"><span className="rounded-lg border border-border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur">No traffic recorded in this period yet.</span></div>
-              )}
             </div>
             <div className="mt-3 flex max-h-20 flex-wrap gap-x-4 gap-y-2 overflow-y-auto border-t border-border/60 pt-3">
               {series.map((item, index) => (
@@ -912,16 +1060,20 @@ const PLAN_LIMIT_COMPARISON = [
   { label: "Custom subdomains", free: "Not included", pro: "Included" },
 ];
 
-function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?: BillingData; authToken: string | null; onChange: () => void | Promise<void>; onAuthError: () => void }) {
+function BillingPanel({ billing, authToken, reservedCount, onChange, onAuthError }: { billing?: BillingData; authToken: string | null; reservedCount: number; onChange: () => void | Promise<void>; onAuthError: () => void }) {
   const [busy, setBusy] = useState<BillingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<SubscriptionConfirmation | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
   const subscription = billing?.subscription ?? null;
   const transactions = billing?.transactions ?? [];
   const availablePlans = new Set(billing?.availablePlans ?? []);
   const hasActivePro = Boolean(billing?.isPro && subscription);
+  // Lemon Squeezy applies the variant's trial to every new subscription, so a
+  // returning customer would otherwise be offered a second free trial.
+  const trialUsed = Boolean(billing?.trialUsed);
   const hasMonthlySubscription = hasActivePro && subscription?.interval === "month" && !subscription.cancelAtPeriodEnd;
   const canSwitchToYearly = hasMonthlySubscription && availablePlans.has("yearly") && Boolean(billing?.checkoutConfigured);
 
@@ -940,6 +1092,21 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
       if (err instanceof UnauthorizedError) onAuthError();
       else setError(err instanceof Error ? err.message : "Couldn't start checkout.");
       setBusy(null);
+    }
+  };
+
+  const openPortal = async () => {
+    if (!authToken || portalBusy) return;
+    setPortalBusy(true);
+    setError(null);
+    try {
+      const url = await getBillingPortalUrl(authToken);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onAuthError();
+      else setError(err instanceof Error ? err.message : "Couldn't open the billing portal.");
+    } finally {
+      setPortalBusy(false);
     }
   };
 
@@ -1012,9 +1179,17 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
           </div>
 
           {hasActivePro && subscription ? (
-            <Button type="button" variant="outline" onClick={() => setManageOpen(true)} disabled={busy !== null} className="h-10 min-w-52 justify-between rounded-lg bg-transparent">
-              <span>Subscription settings</span><Settings2 className="size-4" />
-            </Button>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              <Button type="button" variant="outline" onClick={() => setManageOpen(true)} disabled={busy !== null} className="h-10 justify-between gap-2 rounded-lg bg-transparent">
+                <span>Subscription settings</span><Settings2 className="size-4" />
+              </Button>
+              {billing?.portalAvailable && (
+                <Button type="button" variant="outline" onClick={() => void openPortal()} disabled={portalBusy} className="h-10 justify-between gap-2 rounded-lg bg-transparent">
+                  <span>Manage payment</span>
+                  {portalBusy ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
+                </Button>
+              )}
+            </div>
           ) : (
             <Button type="button" onClick={() => document.getElementById("billing-actions")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-10 justify-between rounded-lg bg-primary text-primary-foreground shadow-none lg:min-w-52">
               Explore GoPort Pro<ChevronRight className="size-4" />
@@ -1023,20 +1198,21 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
         </div>
       </section>
 
-      <PlanLimitComparison isPro={hasActivePro} />
+      <PlanLimitComparison isPro={hasActivePro} reservedCount={reservedCount} />
 
       {!hasActivePro && (
-        <section id="billing-actions" className={`${PANEL} scroll-mt-24 overflow-hidden rounded-lg`}>
+        <section id="billing-actions" className={`${PANEL} overflow-hidden rounded-lg`}>
           <PanelHeader title="Choose your billing cycle" description="Both options include the same Pro limits. Yearly billing saves 44%." />
           <div className="divide-y divide-border">
             <BillingCycleRow
               name="Monthly"
-              description="Seven-day trial, then billed monthly."
+              description={trialUsed ? "Billed monthly from today. Your free trial has already been used." : "Seven-day trial, then billed monthly."}
               price="$2.99"
               period="month"
               available={availablePlans.has("monthly") && Boolean(billing?.checkoutConfigured)}
               busy={busy === "monthly"}
               disabled={busy !== null}
+              actionLabel={trialUsed ? "Subscribe monthly" : undefined}
               onSelect={() => void openCheckout("monthly")}
             />
             <BillingCycleRow
@@ -1055,7 +1231,7 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
       )}
 
       {hasMonthlySubscription && (
-        <section id="billing-actions" className={`${PANEL} scroll-mt-24 overflow-hidden rounded-lg`}>
+        <section id="billing-actions" className={`${PANEL} overflow-hidden rounded-lg`}>
           <PanelHeader title="Save with yearly billing" description="Keep every Pro limit and pay once per year instead of monthly." />
           <BillingCycleRow
             name="Yearly"
@@ -1079,8 +1255,8 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
             {transactions.map((transaction) => (
               <div key={transaction.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-5 py-4 sm:gap-5 sm:px-6">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground"><CircleDollarSign className="size-4" /></span>
-                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-sm font-semibold">{transaction.description}</h4><span className={`text-xs font-medium capitalize ${transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{formatTransactionStatus(transaction.status)}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
-                <p className="font-mono text-sm font-semibold sm:min-w-24 sm:text-right">{formatCurrency(transaction.amountCents, transaction.currency)}</p>
+                <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="truncate text-sm font-semibold">{isTrialRow(transaction) ? "Free trial started" : transaction.description}</h4><span className={`text-xs font-medium capitalize ${isTrialRow(transaction) ? "text-muted-foreground" : transaction.status === "paid" ? "text-primary" : transaction.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>{isTrialRow(transaction) ? "Trial" : formatTransactionStatus(transaction.status)}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatDate(transaction.chargedAt)}</p></div>
+                <p className="font-mono text-sm font-semibold sm:min-w-24 sm:text-right">{isTrialRow(transaction) ? <span className="text-muted-foreground">No charge</span> : formatCurrency(transaction.amountCents, transaction.currency)}</p>
                 <div className="flex justify-end">
                   {transaction.invoiceUrl ? <a href={transaction.invoiceUrl} target="_blank" rel="noreferrer" className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Open receipt" title="Open receipt"><ReceiptText className="size-4" /></a> : <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground/40" aria-label="Receipt unavailable" title="Receipt unavailable"><ReceiptText className="size-4" /></span>}
                 </div>
@@ -1106,6 +1282,15 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
             <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
               <div><p className="text-sm font-semibold">Switch to yearly</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Save 44% with the same Pro limits.</p></div>
               <Button type="button" variant="outline" onClick={() => setConfirmation("yearly")} disabled={busy !== null} className="shrink-0 rounded-lg">Switch</Button>
+            </div>
+          )}
+          {billing?.portalAvailable && (
+            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
+              <div><p className="text-sm font-semibold">Payment method and invoices</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Update your card or download receipts in the Lemon Squeezy portal.</p></div>
+              <Button type="button" variant="outline" onClick={() => void openPortal()} disabled={portalBusy} className="shrink-0 rounded-lg">
+                {portalBusy ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
+                Open portal
+              </Button>
             </div>
           )}
           {!subscription?.cancelAtPeriodEnd && (
@@ -1139,7 +1324,7 @@ function BillingPanel({ billing, authToken, onChange, onAuthError }: { billing?:
   );
 }
 
-function PlanLimitComparison({ isPro }: { isPro: boolean }) {
+function PlanLimitComparison({ isPro, reservedCount = 0 }: { isPro: boolean; reservedCount?: number }) {
   return (
     <section className={`${PANEL} overflow-hidden rounded-lg`}>
       <PanelHeader title="Plan limits" description="See exactly what changes when you upgrade to Pro." />
@@ -1158,6 +1343,19 @@ function PlanLimitComparison({ isPro }: { isPro: boolean }) {
             </div>
           ))}
         </div>
+
+        {!isPro && reservedCount > 0 && (
+          <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-500/25 bg-amber-500/7 px-4 py-3">
+            <Globe2 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="text-xs leading-5 text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                Your {reservedCount === 1 ? "reserved subdomain is" : `${reservedCount} reserved subdomains are`} still held for you.
+              </span>{" "}
+              GoPort does not release them when you move to Free, but the CLI cannot connect to a
+              named subdomain on this plan &mdash; tunnels get a random URL until you upgrade again.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1194,6 +1392,15 @@ function formatSubscriptionStatus(status: NonNullable<BillingData["subscription"
     expired: "Expired",
   };
   return labels[status];
+}
+
+/**
+ * A zero-amount row is Lemon Squeezy recording a trial start, not a payment.
+ * Falls back to the amount so older rows saved before `kind` existed still
+ * render as "Free trial started" rather than "Paid $0.00".
+ */
+function isTrialRow(transaction: BillingData["transactions"][number]): boolean {
+  return transaction.kind === "trial" || transaction.amountCents <= 0;
 }
 
 function formatTransactionStatus(status: BillingData["transactions"][number]["status"]) {
@@ -1245,7 +1452,7 @@ function TokenRow({ authToken, token, canDelete, onChange, onAuthError }: { auth
     <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
       <div className="min-w-0">
         <div className="flex items-center gap-2"><h4 className="truncate text-sm font-semibold">{token.name}</h4>{token.name === "default" && <span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Default</span>}</div>
-        <p className="mt-1 truncate text-xs text-muted-foreground">Created {token.created ? formatDate(token.created) : "with your account"} · Last used not tracked yet</p>
+        <p className="mt-1 truncate text-xs text-muted-foreground">Created {token.created ? formatDate(token.created) : "with your account"} · {token.lastUsed ? `Last used ${formatRelative(token.lastUsed)}` : "Never used"}</p>
       </div>
       <div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
         <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-[#102124] px-3 py-2 font-mono text-xs text-white"><span className="shrink-0 text-[#38d996]">$</span><code className="min-w-0 truncate"><span className="text-[#73dfb8]">goport auth</span> <span className="text-white/70">{revealed ? token.token : maskToken(token.token)}</span></code><button type="button" onClick={() => setRevealed((value) => !value)} className="shrink-0 text-white/45 hover:text-white" aria-label={revealed ? "Hide token" : "Show token"}>{revealed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}</button><button type="button" onClick={copy} className="shrink-0 text-white/45 hover:text-white" aria-label="Copy authentication command">{copied ? <Check className="size-3.5 text-[#38d996]" /> : <Copy className="size-3.5" />}</button></div>
@@ -1702,11 +1909,19 @@ function PanelHeader({ title, description, action, onAction }: { title: string; 
 }
 
 function CompactTunnelRow({ domain, onClick, showDomainType = false }: { domain: DashboardDomain; onClick: () => void; showDomainType?: boolean }) {
-  return <button type="button" onClick={onClick} className="grid w-full gap-3 px-5 py-4 text-left hover:bg-secondary/45 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6"><div className="min-w-0"><div className="flex items-center gap-2.5"><span className={`size-2 shrink-0 rounded-full ${domain.isCurrent ? "bg-primary shadow-[0_0_0_4px_color-mix(in_srgb,var(--primary)_12%,transparent)]" : "bg-muted-foreground/35"}`} /><span className="truncate font-mono text-sm font-semibold">{domain.subdomain}.goport.uz</span></div><p className="mt-1.5 truncate pl-[18px] text-xs text-muted-foreground">{showDomainType ? (domain.isCustom ? "Reserved GoPort subdomain" : "Generated GoPort subdomain") : `127.0.0.1:${domain.localPort || "port not recorded"}`}</p></div><div className="pl-[18px] sm:pl-0 sm:text-right"><p className="font-mono text-xs font-medium">{formatNumber(domain.requests)} requests</p><p className="mt-1 text-xs text-muted-foreground">{formatBytes(domain.bytes)}</p></div><ChevronRight className="hidden size-4 text-muted-foreground sm:block" /></button>;
+  return <button type="button" onClick={onClick} className="grid w-full gap-3 px-5 py-4 text-left hover:bg-secondary/45 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-6"><div className="min-w-0"><div className="flex items-center gap-2.5"><span className={`size-2 shrink-0 rounded-full ${domain.isCurrent ? "bg-primary shadow-[0_0_0_4px_color-mix(in_srgb,var(--primary)_12%,transparent)]" : "bg-muted-foreground/35"}`} /><span className="truncate font-mono text-sm font-semibold">{domain.subdomain}.goport.uz</span></div><p className="mt-1.5 truncate pl-[18px] text-xs text-muted-foreground">{showDomainType ? (domain.isCustom ? "Reserved GoPort subdomain" : "Generated GoPort subdomain") : formatLocalTarget(domain)}</p></div><div className="pl-[18px] sm:pl-0 sm:text-right"><p className="font-mono text-xs font-medium">{formatNumber(domain.requests)} requests</p><p className="mt-1 text-xs text-muted-foreground">{formatBytes(domain.bytes)}</p></div><ChevronRight className="hidden size-4 text-muted-foreground sm:block" /></button>;
 }
 
 function CompactEmpty({ onCreate, message }: { onCreate: () => void; message?: string }) {
   return <div className="flex flex-col items-center px-5 py-12 text-center"><span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Network className="size-5" /></span><p className="mt-4 text-sm font-semibold">{message || "No tunnels yet"}</p><p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">Create a command, run it beside your local app, and the tunnel will appear here.</p><button type="button" onClick={onCreate} className="mt-4 text-sm font-semibold text-primary hover:underline">Create tunnel</button></div>;
+}
+
+/**
+ * One phrasing for a tunnel's local destination. The dashboard previously said
+ * "127.0.0.1:port not recorded" while the tunnels table said "127.0.0.1:—".
+ */
+function formatLocalTarget(domain: DashboardDomain): string {
+  return domain.localPort ? `127.0.0.1:${domain.localPort}` : "Port unknown";
 }
 
 function SectionLead({ title, description }: { title: string; description: string }) {
