@@ -82,7 +82,7 @@ import {
   type UsageData,
   type UsageRange,
   type UsageSeries,
-  API_BASE_URL,
+  apiBase,
   cancelBillingSubscription,
   getBillingPortalUrl,
   changeBillingSubscriptionPlan,
@@ -2093,7 +2093,7 @@ function ProfilePhotoEditor({ authToken, data, onChange, onAuthError }: { authTo
 function Avatar({ name, avatar, large = false }: { name: string; avatar?: string; large?: boolean }) {
   const initials = name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "GP";
   const size = large ? "size-14" : "size-9";
-  const src = avatar?.startsWith("/") ? `${API_BASE_URL}${avatar}` : avatar;
+  const src = avatar?.startsWith("/") ? `${apiBase()}${avatar}` : avatar;
   if (src) return <img src={src} alt={`${name || "GoPort"} profile`} className={`${size} shrink-0 rounded-full border border-border object-cover`} referrerPolicy="no-referrer" />;
   return <span className={`${size} flex shrink-0 items-center justify-center rounded-full bg-[#102124] text-xs font-semibold text-white`}>{initials}</span>;
 }

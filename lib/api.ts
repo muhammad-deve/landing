@@ -1,9 +1,38 @@
 // Base URL of the GoPort backend (PocketBase + custom API).
-// Override per-environment with NEXT_PUBLIC_API_BASE_URL.
-//   - local dev:   http://localhost:8090
-//   - production:  https://back.goport.uz
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8090";
+//
+// NEXT_PUBLIC_* values are compiled into the client bundle at build time, so a
+// single baked-in origin cannot serve every place this app is loaded from. A
+// build pinned to http://localhost:8090 breaks the moment the page is reached
+// over HTTPS -- through a tunnel, say -- because the browser refuses the
+// insecure call as mixed content and reports only "Failed to fetch".
+//
+// So resolve it from where the page is actually running:
+//   - NEXT_PUBLIC_API_BASE_URL set -> use it verbatim (production build)
+//   - otherwise                    -> same-origin "", proxied by the rewrite
+//                                     in next.config.mjs to API_PROXY_TARGET
+//
+// The same-origin path is what lets a tunnelled copy sign in against YOUR
+// local backend, and keeps those calls visible in the inspector.
+const LOCAL_API = "http://localhost:8090";
+
+function resolveApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  // In the browser, stay on the page's own origin and let the Next rewrite in
+  // next.config.mjs forward /api/* to the backend. Same scheme and host as the
+  // page, so no mixed content and no CORS -- and because the request travels
+  // through the tunnel, it appears in the local inspector.
+  if (typeof window !== "undefined") return "";
+
+  // Server-side fetches cannot use a relative URL.
+  return process.env.API_PROXY_TARGET?.trim() || LOCAL_API;
+}
+
+/** Resolved per call so it reflects the origin the page was actually loaded from. */
+export function apiBase(): string {
+  return resolveApiBase();
+}
 
 export interface SendOtpResponse {
   otpId: string;
@@ -69,7 +98,7 @@ export async function sendOtp(
   email: string,
   name: string,
 ): Promise<SendOtpResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/send-otp`, {
+  const res = await fetch(`${apiBase()}/api/v1/auth/send-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, name }),
@@ -100,7 +129,7 @@ export async function verifyOtp(
   otpId: string,
   code: string,
 ): Promise<VerifyOtpResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/verify-otp`, {
+  const res = await fetch(`${apiBase()}/api/v1/auth/verify-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ otpId, code }),
@@ -119,7 +148,7 @@ export async function completeRegistration(
   code: string,
   password: string,
 ): Promise<CompleteRegistrationResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/complete-registration`, {
+  const res = await fetch(`${apiBase()}/api/v1/auth/complete-registration`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ otpId, code, password }),
@@ -139,7 +168,7 @@ export async function completeRegistration(
 
 /** Request a password-reset OTP for an existing account. */
 export async function forgotPassword(email: string): Promise<SendOtpResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
+  const res = await fetch(`${apiBase()}/api/v1/auth/forgot-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -166,7 +195,7 @@ export async function resetPassword(
   code: string,
   password: string,
 ): Promise<ResetPasswordResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/reset-password`, {
+  const res = await fetch(`${apiBase()}/api/v1/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ otpId, code, password }),
@@ -363,7 +392,7 @@ export class UnauthorizedError extends Error {
 
 /** Fetch the authenticated user's dashboard (profile, tokens, stats, domains). */
 export async function getDashboard(token: string): Promise<DashboardData> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/dashboard`, {
+  const res = await fetch(`${apiBase()}/api/v1/dashboard`, {
     headers: { Authorization: token },
   });
 
@@ -381,7 +410,7 @@ export async function createBillingCheckout(
   authToken: string,
   plan: "monthly" | "yearly",
 ): Promise<{ url: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
+  const res = await fetch(`${apiBase()}/api/v1/billing/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ plan }),
@@ -395,7 +424,7 @@ export async function createBillingCheckout(
 }
 
 export async function changeBillingSubscriptionPlan(authToken: string, plan: "yearly"): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, {
+  const res = await fetch(`${apiBase()}/api/v1/billing/subscription`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ plan }),
@@ -408,7 +437,7 @@ export async function changeBillingSubscriptionPlan(authToken: string, plan: "ye
 }
 
 export async function cancelBillingSubscription(authToken: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, {
+  const res = await fetch(`${apiBase()}/api/v1/billing/subscription`, {
     method: "DELETE",
     headers: { Authorization: authToken },
   });
@@ -424,7 +453,7 @@ export async function cancelBillingSubscription(authToken: string): Promise<void
  * rather than with the dashboard because the URL is signed and expires.
  */
 export async function getBillingPortalUrl(authToken: string): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
+  const res = await fetch(`${apiBase()}/api/v1/billing/portal`, {
     headers: { Authorization: authToken },
   });
 
@@ -443,7 +472,7 @@ export async function getDashboardUsage(
   signal?: AbortSignal,
 ): Promise<UsageData> {
   const res = await fetch(
-    `${API_BASE_URL}/api/v1/dashboard/usage?range=${encodeURIComponent(range)}`,
+    `${apiBase()}/api/v1/dashboard/usage?range=${encodeURIComponent(range)}`,
     {
       headers: { Authorization: token },
       signal,
@@ -489,7 +518,7 @@ export async function updateProfileName(authToken: string, firstName: string, la
 
   const name = `${firstName.trim()} ${lastName.trim()}`.trim();
   const res = await fetch(
-    `${API_BASE_URL}/api/collections/users/records/${encodeURIComponent(session.record.id)}`,
+    `${apiBase()}/api/collections/users/records/${encodeURIComponent(session.record.id)}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: authToken },
@@ -512,7 +541,7 @@ export async function uploadProfilePhoto(authToken: string, file: File): Promise
   formData.append("avatar", file);
 
   const res = await fetch(
-    `${API_BASE_URL}/api/collections/users/records/${encodeURIComponent(session.record.id)}`,
+    `${apiBase()}/api/collections/users/records/${encodeURIComponent(session.record.id)}`,
     {
       method: "PATCH",
       headers: { Authorization: authToken },
@@ -528,7 +557,7 @@ export async function uploadProfilePhoto(authToken: string, file: File): Promise
 
 /** Send a verification code to a signed-in user's proposed new email. */
 export async function requestEmailChange(authToken: string, email: string): Promise<SendOtpResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/account/email/request`, {
+  const res = await fetch(`${apiBase()}/api/v1/account/email/request`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ email }),
@@ -547,7 +576,7 @@ export async function requestEmailChange(authToken: string, email: string): Prom
 
 /** Verify the code and replace the authenticated user's email. */
 export async function confirmEmailChange(authToken: string, otpId: string, code: string): Promise<EmailChangeResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/account/email/confirm`, {
+  const res = await fetch(`${apiBase()}/api/v1/account/email/confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ otpId, code }),
@@ -567,7 +596,7 @@ export async function changePassword(
   newPassword: string,
   confirmPassword: string,
 ): Promise<ChangePasswordResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/account/password`, {
+  const res = await fetch(`${apiBase()}/api/v1/account/password`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
@@ -582,7 +611,7 @@ export async function changePassword(
 
 /** Create a new named CLI token. The backend generates the token value. */
 export async function createToken(authToken: string, name: string): Promise<TokenItem> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/tokens`, {
+  const res = await fetch(`${apiBase()}/api/v1/tokens`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authToken },
     body: JSON.stringify({ name }),
@@ -603,7 +632,7 @@ export async function createToken(authToken: string, name: string): Promise<Toke
 
 /** Delete one of the user's CLI tokens by id. */
 export async function deleteToken(authToken: string, id: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/tokens/${id}`, {
+  const res = await fetch(`${apiBase()}/api/v1/tokens/${id}`, {
     method: "DELETE",
     headers: { Authorization: authToken },
   });
@@ -619,7 +648,7 @@ export async function deleteToken(authToken: string, id: string): Promise<void> 
 /** Disconnect an active CLI session for one of the authenticated user's tunnels. */
 export async function stopTunnel(authToken: string, subdomain: string): Promise<void> {
   const res = await fetch(
-    `${API_BASE_URL}/api/v1/tunnels/${encodeURIComponent(subdomain)}/stop`,
+    `${apiBase()}/api/v1/tunnels/${encodeURIComponent(subdomain)}/stop`,
     {
       method: "POST",
       headers: { Authorization: authToken },
@@ -635,7 +664,7 @@ export async function stopTunnel(authToken: string, subdomain: string): Promise<
 /** Permanently remove an inactive tunnel and its aggregate traffic history. */
 export async function deleteTunnel(authToken: string, subdomain: string): Promise<void> {
   const res = await fetch(
-    `${API_BASE_URL}/api/v1/tunnels/${encodeURIComponent(subdomain)}`,
+    `${apiBase()}/api/v1/tunnels/${encodeURIComponent(subdomain)}`,
     {
       method: "DELETE",
       headers: { Authorization: authToken },
@@ -654,7 +683,7 @@ export async function login(
   password: string,
 ): Promise<LoginResponse> {
   const res = await fetch(
-    `${API_BASE_URL}/api/collections/users/auth-with-password`,
+    `${apiBase()}/api/collections/users/auth-with-password`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -675,7 +704,7 @@ export async function startGoogleOAuth(): Promise<void> {
     throw new Error("Google sign-in is only available in the browser.");
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/collections/users/auth-methods`);
+  const res = await fetch(`${apiBase()}/api/collections/users/auth-methods`);
   if (!res.ok) {
     throw new Error(await parseError(res, "Couldn't start Google sign-in."));
   }
@@ -720,7 +749,7 @@ export async function completeGoogleOAuth(
     throw new Error("Google sign-in state mismatch. Please try again.");
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/collections/users/auth-with-oauth2`, {
+  const res = await fetch(`${apiBase()}/api/collections/users/auth-with-oauth2`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
