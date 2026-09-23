@@ -450,6 +450,17 @@ export function LoginForm() {
 
       <AuthDivider />
       <SocialAuth action="Log in" onGoogle={submitGoogle} disabled={loading} />
+      <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
+        New to GoPort? Continuing with Google creates an account and means you accept the{" "}
+        <a href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-foreground">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-foreground">
+          Privacy Policy
+        </a>
+        .
+      </p>
     </form>
   );
 }

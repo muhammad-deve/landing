@@ -32,6 +32,8 @@ const FOOTER_LINKS = [
     links: [
       { label: "FAQ", href: "/#faq" },
       { label: "Contact", href: `mailto:${CONTACT_EMAIL}` },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
       { label: "Dashboard", href: "/dashboard" },
     ],
   },

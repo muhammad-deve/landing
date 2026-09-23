@@ -266,3 +266,22 @@
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
 }
+
+/* Long-form legal copy (/terms). Scoped so it can't leak into marketing sections. */
+.legal-prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.legal-prose a:hover { color: var(--foreground); }
+.legal-prose strong { color: var(--foreground); font-weight: 600; }
+.legal-prose a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }
+.legal-prose ul { list-style: disc; padding-left: 1.25rem; }
+.legal-prose li + li { margin-top: 0.375rem; }
+.legal-prose li::marker { color: var(--primary); }
+.legal-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  color: var(--foreground);
+}

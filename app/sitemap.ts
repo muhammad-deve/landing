@@ -20,6 +20,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/quickstart", changeFrequency: "monthly", priority: 0.8 },
     { path: "/docs", changeFrequency: "monthly", priority: 0.8 },
     { path: "/self-hosting", changeFrequency: "monthly", priority: 0.8 },
+    { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
   ];
 
   return routes.map(({ path, changeFrequency, priority }) => ({

@@ -139,6 +139,10 @@ export function SignupForm() {
 
   const submitGoogle = async () => {
     if (loading) return;
+    if (!accepted) {
+      setError("Accept the Terms of Service and Privacy Policy to sign up.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -382,8 +386,12 @@ export function SignupForm() {
         />
         <span>
           I accept the{" "}
-          <a href="#" className="text-primary underline-offset-2 hover:underline">
+          <a href="/terms" target="_blank" rel="noopener" className="text-primary underline underline-offset-2 hover:text-foreground">
             Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline underline-offset-2 hover:text-foreground">
+            Privacy Policy
           </a>
         </span>
       </label>
