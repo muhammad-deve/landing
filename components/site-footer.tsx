@@ -42,11 +42,6 @@ const FOOTER_LINKS = [
 export function SiteFooter() {
   return (
     <footer className="relative overflow-hidden border-t border-border bg-background text-foreground">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_18%_0%,color-mix(in_srgb,var(--primary)_9%,transparent),transparent_45%)]"
-      />
-
       <div className="relative mx-auto w-full max-w-7xl px-5 sm:px-7">
         <div className="grid gap-9 py-10 lg:grid-cols-[minmax(15rem,1.35fr)_minmax(0,1.65fr)] lg:gap-16 lg:py-12">
           <div className="max-w-sm">
