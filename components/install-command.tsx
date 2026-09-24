@@ -16,7 +16,7 @@ const PLATFORMS = [
     label: "macOS",
     icon: AppleIcon,
     prompt: "$",
-    command: "brew tap muhammad-deve/goport && brew install goport",
+    command: "brew install muhammad-deve/goport/goport",
     downloads: [
       { label: "Apple Silicon", href: `${RELEASE_DOWNLOAD_URL}/goport-darwin-arm64` },
       { label: "Intel Mac", href: `${RELEASE_DOWNLOAD_URL}/goport-darwin-amd64` },
