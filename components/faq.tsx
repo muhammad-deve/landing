@@ -38,7 +38,7 @@ export const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 sm:px-7 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:py-18">
+    <section id="faq" className="mx-auto grid w-full max-w-7xl -scroll-mt-14 gap-10 px-5 py-14 sm:px-7 lg:-scroll-mt-18 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:py-18">
       <SectionHeader
         eyebrow="FAQ"
         title="What developers ask before opening a tunnel."

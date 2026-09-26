@@ -180,7 +180,7 @@ export function CompatibleServices() {
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
+    <section id="use-cases" className="mx-auto w-full max-w-7xl -scroll-mt-14 px-5 py-14 sm:px-7 lg:-scroll-mt-18 lg:py-18">
       <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-start">
         <SectionHeader eyebrow="Use cases" title="A public URL for work that still runs locally." description="See how a localhost tunnel fits into webhook development, payment testing, OAuth, mobile apps, and client reviews." align="left" />
         <UseCaseWorkbench />
@@ -191,7 +191,7 @@ export function UseCases() {
 
 export function Quickstart() {
   return (
-    <section id="quickstart" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
+    <section id="quickstart" className="mx-auto w-full max-w-7xl -scroll-mt-14 px-5 py-14 sm:px-7 lg:-scroll-mt-18 lg:py-18">
       <SectionHeader eyebrow="Get started" title="Open your first localhost tunnel." description="Install the CLI, authenticate once, and point GoPort at the port your application already uses." />
 
       <div className="mt-10 overflow-hidden rounded-[1.5rem] border border-border bg-card/60 shadow-[0_30px_90px_-60px_rgba(8,17,19,0.5)]">
@@ -261,7 +261,7 @@ export function DocsOverview() {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-7 lg:py-18">
+    <section id="pricing" className="mx-auto w-full max-w-7xl -scroll-mt-14 px-5 py-14 sm:px-7 lg:-scroll-mt-18 lg:py-18">
       <SectionHeader eyebrow="Pricing" title="Start free. Upgrade when the work demands it." description="Use the Free plan for local development, or choose monthly or yearly Pro. Cancel any paid plan at any time." />
       <div className="mt-10 grid gap-4 lg:grid-cols-3">
         {PLANS.map((plan) => (
