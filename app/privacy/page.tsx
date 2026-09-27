@@ -78,7 +78,7 @@ const CLAUSES: LegalClause[] = [
           address directly; we don’t receive your full card number.
         </p>
         <p>
-          <strong>Website analytics.</strong> When you browse goport.uz, Google Analytics and Vercel Analytics record
+          <strong>Website analytics.</strong> When you browse goport.uz, Google Analytics, Vercel Analytics, and Umami Analytics record
           pages visited, referrer, approximate location derived from your IP address, and device and browser type.
         </p>
         <p>
@@ -148,6 +148,7 @@ const CLAUSES: LegalClause[] = [
           <li><strong>Lemon Squeezy</strong>, our merchant of record, for payments, taxes, and invoices;</li>
           <li><strong>Google</strong>, for Google sign-in, Google Analytics, and storing early-access sign-ups;</li>
           <li><strong>Vercel</strong>, for website analytics;</li>
+          <li><strong>Umami</strong>, for website analytics;</li>
           <li><strong>Resend</strong>, for sending account emails;</li>
           <li>our hosting and infrastructure providers, which run the servers the Service is on.</li>
         </ul>
@@ -169,9 +170,9 @@ const CLAUSES: LegalClause[] = [
           session storage briefly during Google sign-in. These are needed for the site to work.
         </p>
         <p>
-          Google Analytics sets cookies to tell visits apart. Vercel Analytics does not use cookies. You can block or
-          delete cookies in your browser settings, or use Google’s opt-out browser add-on, without affecting your
-          ability to use GoPort.
+          Google Analytics sets cookies to tell visits apart. Vercel Analytics and Umami Analytics do not use cookies.
+          You can block or delete cookies in your browser settings, or use Google’s opt-out browser add-on, without
+          affecting your ability to use GoPort.
         </p>
       </>
     ),

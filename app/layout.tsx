@@ -95,6 +95,11 @@ export default function RootLayout({
             gtag('config', 'G-4RDRG6148J');
           `}
         </Script>
+        <script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="f19434a8-bf0e-4b94-9bcd-e7980e56aac0"
+        />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>

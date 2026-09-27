@@ -11,7 +11,7 @@ interface AuthShellProps {
 
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-5 py-24 sm:px-6">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-5 pb-8 pt-20 sm:px-6 sm:pt-6">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-55 dark:opacity-100"
