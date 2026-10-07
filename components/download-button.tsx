@@ -13,22 +13,11 @@ import { detectMacArch, detectPlatform, RELEASE_DOWNLOAD_URL, type MacArch, type
 const FALLBACK_HREF = "/quickstart#quickstart";
 const BREW_COMMAND = "brew install muhammad-deve/goport/goport";
 
-function getBuild(platform: PlatformId, macArch: MacArch) {
-  if (platform === "windows") {
-    return {
-      label: "Windows",
-      // The installer (server/installer/goport.iss) puts goport.exe on the
-      // user's PATH, so the commands below work from any folder.
-      file: "goport-windows-setup.exe",
-      icon: WindowsIcon,
-      intro: "Open the installer when it finishes. Then, in a new terminal window, run:",
-      prompt: ">",
-      steps: ["goport auth <token>", "goport http 8080"],
-      // The installer is not code-signed yet, so SmartScreen warns on first run.
-      note: "If Windows says it protected your PC, choose More info, then Run anyway.",
-    };
-  }
+// Installers/Windows/goport.iss puts goport on PATH, and its last screen shows
+// the next commands, so Windows gets a plain download with no popover.
+const WINDOWS_INSTALLER = "goport-windows-setup.exe";
 
+function getBuild(platform: Exclude<PlatformId, "windows">, macArch: MacArch) {
   if (platform === "macos") {
     const file = `goport-darwin-${macArch}`;
     return {
@@ -40,7 +29,6 @@ function getBuild(platform: PlatformId, macArch: MacArch) {
       // Browsers drop the executable bit and macOS quarantines downloads, so a
       // fresh binary needs both fixed before Gatekeeper will let it run.
       steps: ["cd ~/Downloads", `chmod +x ${file}`, `xattr -c ${file}`, `./${file} auth <token>`, `./${file} http 8080`],
-      note: null,
     };
   }
 
@@ -52,14 +40,14 @@ function getBuild(platform: PlatformId, macArch: MacArch) {
     intro: "When it finishes, run GoPort from a terminal:",
     prompt: "$",
     steps: ["cd ~/Downloads", `chmod +x ${file}`, `./${file} auth <token>`, `./${file} http 8080`],
-    note: null,
   };
 }
 
 /**
  * Nav call to action. On desktop it downloads the CLI build for the visitor's
- * OS in place, then opens a popover with the commands to run it, so nobody is
- * sent to another page just to find a file.
+ * OS in place, so nobody is sent to another page just to find a file. The
+ * macOS and Linux binaries need a few terminal commands before they run, so
+ * those downloads also open a popover listing them.
  */
 export function DownloadButton() {
   const [platform, setPlatform] = useState<PlatformId | null>(null);
@@ -83,6 +71,21 @@ export function DownloadButton() {
           <Download className="size-4" />
           Download
         </Link>
+      </Button>
+    );
+  }
+
+  if (platform === "windows") {
+    return (
+      <Button asChild className={buttonClassName}>
+        <a
+          href={`${RELEASE_DOWNLOAD_URL}/${WINDOWS_INSTALLER}`}
+          aria-label="Download the GoPort installer for Windows"
+          title={`${WINDOWS_INSTALLER} · latest release`}
+        >
+          <WindowsIcon className="size-3.5" />
+          Download
+        </a>
       </Button>
     );
   }
@@ -170,7 +173,6 @@ export function DownloadButton() {
             </Link>
             .
           </p>
-          {build.note && <p className="mt-2 text-xs leading-5 text-muted-foreground">{build.note}</p>}
           {platform === "macos" && (
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Prefer Homebrew? <code className="whitespace-nowrap font-mono text-foreground">{BREW_COMMAND}</code>
