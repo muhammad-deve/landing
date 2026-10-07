@@ -74,8 +74,10 @@ export function CompatibleServices() {
           </div>
 
           <div className="p-5 sm:p-6">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.08fr)_2.5rem_minmax(0,1.24fr)_2.5rem_minmax(0,1fr)] lg:items-stretch lg:gap-2">
-              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
+            {/* Column ratios follow the length of each card's monospace line, so
+                checkout.session.completed fits untruncated in the ~580px xl row. */}
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_2.5rem_minmax(0,1.16fr)_2.5rem_minmax(0,1fr)] lg:items-stretch lg:gap-2">
+              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4 xl:px-3.5">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-white p-1.5"><img src="https://cdn.simpleicons.org/stripe/635BFF" alt="" width={20} height={20} className="size-full" /></span>
                   <span className="min-w-0">
@@ -83,8 +85,8 @@ export function CompatibleServices() {
                     <span className="mt-1 block text-sm font-semibold text-foreground">Stripe</span>
                   </span>
                 </div>
-                <code className="mt-3 block truncate text-[11px] text-muted-foreground" title="check.session.completed">
-                  check.session.completed
+                <code className="mt-3 block truncate text-[11px] text-muted-foreground" title="checkout.session.completed">
+                  checkout.session.completed
                 </code>
               </div>
 
@@ -93,7 +95,7 @@ export function CompatibleServices() {
                 <ArrowRight className="size-4 rotate-90 lg:rotate-0" />
               </div>
 
-              <div className="min-w-0 rounded-xl border border-primary/35 bg-primary/[0.09] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
+              <div className="min-w-0 rounded-xl border border-primary/35 bg-primary/[0.09] p-4 xl:px-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-card p-1 text-foreground shadow-sm">
                     <GoPortFavicon className="size-full" />
@@ -103,8 +105,8 @@ export function CompatibleServices() {
                     <span className="mt-1 block text-sm font-semibold text-foreground">GoPort tunnel</span>
                   </span>
                 </div>
-                <code className="mt-3 flex min-w-0 items-baseline whitespace-nowrap text-[11px]" aria-label="check.goport.uz/stripe">
-                  <span className="text-muted-foreground">check.goport.uz</span>
+                <code className="mt-3 flex min-w-0 items-baseline whitespace-nowrap text-[11px]" aria-label="checkout.goport.uz/stripe">
+                  <span className="text-muted-foreground">checkout.goport.uz</span>
                   <span className="shrink-0 font-semibold text-primary">/stripe</span>
                 </code>
               </div>
@@ -114,7 +116,7 @@ export function CompatibleServices() {
                 <ArrowRight className="size-4 rotate-90 lg:rotate-0" />
               </div>
 
-              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4">
+              <div className="min-w-0 rounded-xl border border-border bg-background/75 p-4 xl:px-3.5">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-card"><Server className="size-4 text-foreground" /></span>
                   <span className="min-w-0">
@@ -130,7 +132,7 @@ export function CompatibleServices() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-background/55 px-4 py-3 font-mono text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">POST check.session.completed</span>
+              <span className="font-semibold text-foreground">POST checkout.session.completed</span>
               <span className="inline-flex items-center gap-1.5">
                 <span>
                   <span className="text-primary">✓</span> delivered to <span className="font-semibold text-foreground">localhost:8080/stripe</span>

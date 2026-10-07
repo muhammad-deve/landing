@@ -1,17 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, Check, Star } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallCommandCompact } from "@/components/install-command";
 import { TerminalPreview } from "@/components/terminal-preview";
 
-interface HeroProps {
-  /** Live GitHub star count, or null when the API was unreachable at build time. */
-  stars?: number | null;
-}
-
-const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
-
-export function Hero({ stars = null }: HeroProps) {
+export function Hero() {
   return (
     // The full-width wrapper's `overflow-x-clip` contains the decorative glow
     // below, which would otherwise widen the document on narrow viewports.
@@ -28,17 +21,6 @@ export function Hero({ stars = null }: HeroProps) {
                 <span className="size-2 rounded-full bg-primary" />
                 Open-source localhost tunnel
               </span>
-              {stars !== null && (
-                <a
-                  href={GITHUB_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground"
-                >
-                  <Star className="size-3.5 text-primary" />
-                  {stars.toLocaleString()} on GitHub
-                </a>
-              )}
             </div>
 
             <h1 className="text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.05em] text-foreground sm:text-5xl lg:text-[3.25rem] 2xl:text-[3.75rem]">

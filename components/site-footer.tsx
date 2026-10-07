@@ -4,9 +4,8 @@ import { GoPortLogo } from "@/components/goport-logo";
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 const LICENSE_URL = `${GITHUB_URL}/blob/main/LICENSE`;
 
-// Single source of truth for the public contact address. Switching to a
-// goport.uz mailbox is a one-line change here once that mailbox exists.
-const CONTACT_EMAIL = "muhammadgo.deve@gmail.com";
+// Single source of truth for the public contact address; the legal pages import it too.
+export const CONTACT_EMAIL = "support@contact.goport.uz";
 
 const FOOTER_LINKS = [
   {

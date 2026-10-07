@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause } from "@/components/legal-page";
+import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause, type LegalSummaryItem } from "@/components/legal-page";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 const MAIL = `mailto:${LEGAL_CONTACT_EMAIL}`;
@@ -13,11 +13,23 @@ export const metadata: Metadata = {
   openGraph: { url: "/terms" },
 };
 
-const SUMMARY = [
-  "You’re responsible for everything you expose through a tunnel. No phishing, malware, or illegal content.",
-  "Free: 1 tunnel and 5 GB a month. Pro: up to 10 tunnels and 70 GB a month. Limits are enforced automatically.",
-  "Pro is billed through Lemon Squeezy. Cancel anytime and keep Pro until the end of the period you paid for.",
-  "The hosted service comes with no uptime guarantee. For full control, self-host the MIT-licensed code.",
+const SUMMARY: LegalSummaryItem[] = [
+  {
+    title: "Your tunnels, your responsibility",
+    text: "You’re responsible for everything you expose through a tunnel. No phishing, malware, or illegal content.",
+  },
+  {
+    title: "Plan limits",
+    text: "Free: 1 tunnel and 5 GB a month. Pro: up to 10 tunnels and 70 GB a month. Limits are enforced automatically.",
+  },
+  {
+    title: "Billing",
+    text: "Pro is billed through Lemon Squeezy. Cancel anytime and keep Pro until the end of the period you paid for.",
+  },
+  {
+    title: "Availability",
+    text: "The hosted service comes with no uptime guarantee. For full control, self-host the MIT-licensed code.",
+  },
 ];
 
 const CLAUSES: LegalClause[] = [
@@ -398,6 +410,7 @@ const CLAUSES: LegalClause[] = [
 export default function TermsPage() {
   return (
     <LegalPage
+      current="terms"
       title="Terms of Service"
       effectiveDate="2026-09-23"
       intro={
@@ -408,7 +421,7 @@ export default function TermsPage() {
       }
       summary={SUMMARY}
       clauses={CLAUSES}
-      related={{ label: "Read the Privacy Policy", href: "/privacy" }}
+      contactPrompt="Questions about these terms?"
     />
   );
 }

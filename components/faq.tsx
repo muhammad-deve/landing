@@ -4,35 +4,35 @@ import { SectionHeader } from "@/components/section-header";
 export const FAQS = [
   {
     q: "What is GoPort?",
-    a: "GoPort is a localhost tunnel for developers. It forwards traffic from a public HTTPS URL to an app running on your computer, so you can test webhooks, share a preview, or reach a local API without deploying it first.",
+    a: "A localhost tunnel. It gives an app on your computer a public HTTPS URL, so you can test webhooks or share a preview without deploying.",
   },
   {
     q: "How do I expose localhost to the internet with GoPort?",
-    a: "Install the GoPort CLI, authenticate it with a token from your account, and run goport http 8080. Replace 8080 with your app's local port. GoPort prints the public HTTPS URL as soon as the tunnel connects.",
+    a: "Install the CLI, run goport auth <token> once, then goport http 8080 with your app's port. GoPort prints the public URL.",
   },
   {
     q: "Can I test webhooks on localhost?",
-    a: "Yes. Use your GoPort URL as the webhook endpoint in Stripe, GitHub, Payme, Click, or another service. Each delivery is forwarded to your local handler, where you can inspect the request and response and replay captured requests after a code change.",
+    a: "Yes. Set your GoPort URL as the webhook endpoint in Stripe, GitHub, Payme, or any provider. Deliveries reach your local handler, and you can replay them.",
   },
   {
     q: "Do I need a public IP or port forwarding?",
-    a: "No. The GoPort CLI opens an outbound connection from your machine. You do not need to open an inbound router port, change firewall rules, or assign a public IP to your computer.",
+    a: "No. The CLI connects outbound, so there are no router ports, firewall rules, or public IPs to set up.",
   },
   {
     q: "Can I keep the same public URL?",
-    a: "Yes. Request an available GoPort subdomain with the --custom flag when you need a stable callback or preview URL. Use --reset when you want GoPort to assign a new random subdomain.",
+    a: "Yes, on Pro. Use --custom to claim a subdomain, or --reset for a new random one.",
   },
   {
     q: "What happens when I hit the 5 GB Free limit?",
-    a: "GoPort stops opening new tunnels for the rest of the calendar month and the CLI tells you the limit was reached. Nothing is deleted and no charge is applied. Your allowance resets at the start of the next month, or you can upgrade to Pro for 70 GB per month.",
+    a: "New tunnels stop opening until the month resets. Nothing is deleted and you are never charged.",
   },
   {
     q: "Can I self-host GoPort for free?",
-    a: "Yes. GoPort is MIT licensed and the tunnel server is in the same repository as the CLI. Run it on your own machine with your own wildcard domain and there are no plan limits, no account, and no payment. The hosted plans exist for people who would rather not run the server themselves.",
+    a: "Yes. GoPort is MIT licensed. Run the server on your own domain with no limits, account, or payment.",
   },
   {
     q: "How do payments work, and can I cancel?",
-    a: "Payments are processed by Lemon Squeezy, our merchant of record, which accepts major credit and debit cards and PayPal. You can cancel Pro at any time from your dashboard; your plan stays active until the end of the period you have already paid for, and you are not charged again. If a charge looks wrong, email us and we will resolve it through Lemon Squeezy. Click, Payme, and MultiCard appear on this site as examples of webhooks you can test through a tunnel, not as GoPort payment methods.",
+    a: "Lemon Squeezy handles payments by card or PayPal. Cancel anytime from the dashboard and keep Pro until your paid period ends.",
   },
 ] as const;
 

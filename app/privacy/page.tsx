@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause } from "@/components/legal-page";
+import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause, type LegalSummaryItem } from "@/components/legal-page";
 
 const MAIL = `mailto:${LEGAL_CONTACT_EMAIL}`;
 
@@ -12,11 +12,23 @@ export const metadata: Metadata = {
   openGraph: { url: "/privacy" },
 };
 
-const SUMMARY = [
-  "We relay your tunnel traffic but don’t store its contents. The Request Inspector keeps its data on your machine.",
-  "We keep what’s needed to run your account: name, email, tokens, tunnels, and usage counts.",
-  "Payments go through Lemon Squeezy. We never see your full card number.",
-  "We don’t sell your data. Email us to get a copy of it or to delete your account.",
+const SUMMARY: LegalSummaryItem[] = [
+  {
+    title: "Tunnel traffic",
+    text: "We relay your tunnel traffic but don’t store its contents. The Request Inspector keeps its data on your machine.",
+  },
+  {
+    title: "Account data",
+    text: "We keep what’s needed to run your account: name, email, tokens, tunnels, and usage counts.",
+  },
+  {
+    title: "Payments",
+    text: "Payments go through Lemon Squeezy. We never see your full card number.",
+  },
+  {
+    title: "Your control",
+    text: "We don’t sell your data. Email us to get a copy of it or to delete your account.",
+  },
 ];
 
 const CLAUSES: LegalClause[] = [
@@ -269,6 +281,7 @@ const CLAUSES: LegalClause[] = [
 export default function PrivacyPage() {
   return (
     <LegalPage
+      current="privacy"
       title="Privacy Policy"
       effectiveDate="2026-09-23"
       intro={
@@ -279,7 +292,7 @@ export default function PrivacyPage() {
       }
       summary={SUMMARY}
       clauses={CLAUSES}
-      related={{ label: "Read the Terms of Service", href: "/terms" }}
+      contactPrompt="Questions about your data?"
     />
   );
 }

@@ -267,7 +267,7 @@
   }
 }
 
-/* Long-form legal copy (/terms). Scoped so it can't leak into marketing sections. */
+/* Long-form legal copy (/terms, /privacy). Scoped so it can't leak into marketing sections. */
 .legal-prose a {
   color: var(--primary);
   text-decoration: underline;

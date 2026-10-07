@@ -6,15 +6,12 @@ import { Hero } from "@/components/hero";
 import { PageBackground } from "@/components/page-background";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
-import { getGitHubStars } from "@/lib/github";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default async function Home() {
-  const stars = await getGitHubStars();
-
+export default function Home() {
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -63,7 +60,7 @@ export default async function Home() {
       <SiteNav />
 
       <main className="relative z-10 flex-1">
-        <Hero stars={stars} />
+        <Hero />
         <CompatibleServices />
         <UseCases />
         <Quickstart />
