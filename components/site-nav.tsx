@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import { type MouseEvent, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DownloadButton } from "@/components/download-button";
 import { GoPortLogo } from "@/components/goport-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -61,7 +62,7 @@ export function SiteNav() {
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"><Link href="/login">Log in</Link></Button>
-          <Button asChild className="h-9 rounded-full bg-primary px-4 text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/quickstart">Get started</Link></Button>
+          <DownloadButton />
           <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label="Toggle navigation" className="flex size-9 items-center justify-center rounded-full border border-border bg-card/70 text-foreground lg:hidden">
             {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>

@@ -6,9 +6,7 @@ import { AppleIcon, LinuxIcon, WindowsIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { copyText } from "@/lib/clipboard";
-
-const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
-const RELEASE_DOWNLOAD_URL = `${GITHUB_URL}/releases/latest/download`;
+import { detectPlatform, RELEASE_DOWNLOAD_URL, type PlatformId } from "@/lib/platform";
 
 const PLATFORMS = [
   {
@@ -28,7 +26,7 @@ const PLATFORMS = [
     icon: WindowsIcon,
     prompt: ">",
     command: "choco install goport",
-    downloads: [{ label: "Download for Windows", href: `${RELEASE_DOWNLOAD_URL}/goport-windows-amd64.exe` }],
+    downloads: [{ label: "Download installer for Windows", href: `${RELEASE_DOWNLOAD_URL}/goport-windows-setup.exe` }],
   },
   {
     id: "linux",
@@ -39,16 +37,6 @@ const PLATFORMS = [
     downloads: [{ label: "Download for Linux", href: `${RELEASE_DOWNLOAD_URL}/goport-linux-amd64` }],
   },
 ] as const;
-
-type PlatformId = (typeof PLATFORMS)[number]["id"];
-
-function detectPlatform(): PlatformId | null {
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.includes("windows")) return "windows";
-  if (userAgent.includes("macintosh") || userAgent.includes("mac os x")) return "macos";
-  if (userAgent.includes("linux")) return "linux";
-  return null;
-}
 
 /**
  * One-line install command for the detected OS, with a copy button. Used in the

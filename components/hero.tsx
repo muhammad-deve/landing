@@ -15,7 +15,7 @@ export function Hero() {
     <div className="w-full overflow-x-clip">
       <section id="product" className="mx-auto w-full max-w-7xl px-5 pb-14 pt-24 sm:px-7 sm:pt-28 lg:pb-16 lg:pt-28">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:gap-10 xl:gap-12">
-          <div className="max-w-xl text-left">
+          <div className="min-w-0 max-w-xl text-left">
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm">
                 <span className="size-2 rounded-full bg-primary" />
