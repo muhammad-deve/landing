@@ -73,7 +73,10 @@ const CLAUSES: LegalClause[] = [
         </p>
         <p>
           <strong>Tokens and devices.</strong> The auth tokens you create, their names, and when they were created,
-          which we use to count and limit the devices connected to your account.
+          which we use to count and limit the devices connected to your account. For each device we also record the
+          GoPort version, operating system and processor type, how GoPort was installed, the country its connection
+          comes from (looked up on our own server from the IP address), and how often its tunnel has had to reconnect.
+          We use this to support older versions, fix connection problems, and decide where to add servers.
         </p>
         <p>
           <strong>Tunnel and usage data.</strong> Your tunnels’ subdomains and addresses, when they were opened and
@@ -283,7 +286,7 @@ export default function PrivacyPage() {
     <LegalPage
       current="privacy"
       title="Privacy Policy"
-      effectiveDate="2026-09-23"
+      effectiveDate="2026-10-17"
       intro={
         <p>
           What we collect when you use goport.uz and the tunnel service, why we collect it, and how you can see or
