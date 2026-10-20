@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { DocsOverview, Quickstart } from "@/components/home-sections";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Quickstart",
-  description: "Install the GoPort CLI, authenticate your machine, and expose a local app through a public HTTPS URL in four steps.",
-  alternates: { canonical: "/quickstart" },
-  openGraph: { url: "/quickstart" },
-};
+  description:
+    "Install the GoPort CLI, authenticate your machine, and expose a local app through a public HTTPS URL in four steps.",
+  path: "/quickstart",
+});
 
 export default function QuickstartPage() {
   return (

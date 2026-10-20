@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Faq } from "@/components/faq";
 import { Pricing } from "@/components/home-sections";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Pricing",
-  description: "Compare GoPort Free and Pro plans for active tunnels, monthly traffic, custom subdomains, request inspection, and connected devices.",
-  alternates: { canonical: "/pricing" },
-  openGraph: { url: "/pricing" },
-};
+  description:
+    "Compare GoPort Free and Pro plans for active tunnels, monthly traffic, custom subdomains, request inspection, and connected devices.",
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   return (

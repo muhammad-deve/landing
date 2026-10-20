@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause, type LegalSummaryItem } from "@/components/legal-page";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 const MAIL = `mailto:${LEGAL_CONTACT_EMAIL}`;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Terms of Service",
   description:
     "The terms for using the hosted GoPort tunneling service at goport.uz: accounts, acceptable use, plans and billing, liability, and termination.",
-  alternates: { canonical: "/terms" },
-  openGraph: { url: "/terms" },
-};
+  path: "/terms",
+});
 
 const SUMMARY: LegalSummaryItem[] = [
   {

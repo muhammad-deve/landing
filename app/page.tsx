@@ -6,6 +6,7 @@ import { Hero } from "@/components/hero";
 import { PageBackground } from "@/components/page-background";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { jsonLd, SOFTWARE_STRUCTURED_DATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -13,26 +14,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   const structuredData = [
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "GoPort",
-      url: "https://goport.uz",
-      description:
-        "An open-source, self-hostable localhost tunnel that gives local apps, APIs, and webhook handlers a public HTTPS URL.",
-      applicationCategory: "DeveloperApplication",
-      operatingSystem: "Windows, macOS, Linux",
-      softwareHelp: "https://github.com/muhammad-deve/GoPort#readme",
-      downloadUrl: "https://github.com/muhammad-deve/GoPort/releases/latest",
-      license: "https://github.com/muhammad-deve/GoPort/blob/main/LICENSE",
-      sameAs: ["https://github.com/muhammad-deve/GoPort"],
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "USD",
-        description: "Free plan",
-      },
-    },
+    SOFTWARE_STRUCTURED_DATA,
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
@@ -49,12 +31,7 @@ export default function Home() {
 
   return (
     <div className="relative z-0 flex min-h-screen flex-col">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
-        }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
       <AuthRedirect />
       <PageBackground />
       <SiteNav />

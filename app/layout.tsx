@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { jsonLd, SITE_STRUCTURED_DATA } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -102,6 +103,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_STRUCTURED_DATA) }} />
         <ThemeProvider>
           {children}
         </ThemeProvider>

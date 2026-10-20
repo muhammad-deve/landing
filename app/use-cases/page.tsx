@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { CompatibleServices, UseCases } from "@/components/home-sections";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Use Cases",
-  description: "Use GoPort to test webhooks, payment callbacks, OAuth redirects, mobile apps, local APIs, and client previews without deploying first.",
-  alternates: { canonical: "/use-cases" },
-  openGraph: { url: "/use-cases" },
-};
+  description:
+    "Use GoPort to test webhooks, payment callbacks, OAuth redirects, mobile apps, local APIs, and client previews without deploying first.",
+  path: "/use-cases",
+});
 
 export default function UseCasesPage() {
   return (

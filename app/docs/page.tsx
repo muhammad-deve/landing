@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { BookOpen, Download, GitFork, Network } from "lucide-react";
 import { DocsOverview, Quickstart } from "@/components/home-sections";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
@@ -6,18 +7,18 @@ import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
 const DOC_LINKS = [
-  { title: "Installation", description: "Install GoPort on macOS, Windows, or Linux.", href: `${GITHUB_URL}#installation`, icon: Download },
+  { title: "Installation", description: "Install GoPort on macOS, Windows, or Linux.", href: `${GITHUB_URL}#1-install`, icon: Download },
   { title: "How it works", description: "Follow the tunnel connection from public HTTPS to your machine.", href: `${GITHUB_URL}#how-it-works`, icon: Network },
-  { title: "Technical details", description: "Understand the TCP and yamux architecture behind GoPort.", href: `${GITHUB_URL}#technical-details`, icon: BookOpen },
+  { title: "Technical details", description: "Understand the TCP and yamux architecture behind GoPort.", href: `${GITHUB_URL}/blob/main/docs/security-model.md`, icon: BookOpen },
   { title: "Source and license", description: "Inspect, fork, and self-host the MIT-licensed project.", href: GITHUB_URL, icon: GitFork },
 ];
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Documentation",
-  description: "Read GoPort installation instructions, tunnel architecture, CLI quickstart, technical details, and self-hosting resources.",
-  alternates: { canonical: "/docs" },
-  openGraph: { url: "/docs" },
-};
+  description:
+    "Read GoPort installation instructions, tunnel architecture, CLI quickstart, technical details, and self-hosting resources.",
+  path: "/docs",
+});
 
 export default function DocsPage() {
   return (

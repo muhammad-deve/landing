@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { LEGAL_CONTACT_EMAIL, LegalPage, type LegalClause, type LegalSummaryItem } from "@/components/legal-page";
 
 const MAIL = `mailto:${LEGAL_CONTACT_EMAIL}`;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
   description:
     "What personal data GoPort collects when you use goport.uz and the tunnel service, why, who processes it, and how to access or delete it.",
-  alternates: { canonical: "/privacy" },
-  openGraph: { url: "/privacy" },
-};
+  path: "/privacy",
+});
 
 const SUMMARY: LegalSummaryItem[] = [
   {
@@ -214,8 +214,8 @@ const CLAUSES: LegalClause[] = [
     title: "Security",
     body: (
       <p>
-        We use reasonable technical and organizational measures to protect your data, including HTTPS for all
-        connections, hashed passwords, and auth tokens you can revoke at any time. No system is perfectly secure, so we
+        We use reasonable technical and organizational measures to protect your data, including HTTPS for the website,
+        the API, and public tunnel URLs, hashed passwords, and auth tokens you can revoke at any time. No system is perfectly secure, so we
         can’t guarantee absolute security. Keep your password and tokens private, and protect the applications you
         expose through tunnels.
       </p>

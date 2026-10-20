@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { ArrowRight, GitFork, Globe, Server, ShieldCheck } from "lucide-react";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
@@ -8,13 +9,12 @@ import { Button } from "@/components/ui/button";
 
 const GITHUB_URL = "https://github.com/muhammad-deve/GoPort";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Self-Hosting",
   description:
     "Run the GoPort tunnel server on your own infrastructure. MIT licensed, Docker Compose deployment, your own wildcard domain, and no plan limits.",
-  alternates: { canonical: "/self-hosting" },
-  openGraph: { url: "/self-hosting" },
-};
+  path: "/self-hosting",
+});
 
 const REQUIREMENTS = [
   {
