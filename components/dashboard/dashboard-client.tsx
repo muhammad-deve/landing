@@ -51,6 +51,7 @@ import {
 import { GoPortLogo, GoPortMark } from "@/components/goport-logo";
 import { InstallCommand } from "@/components/install-command";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SharePanel } from "@/components/dashboard/share-panel";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -110,6 +111,7 @@ import { isPasswordValid } from "@/lib/password";
 type DashboardView =
   | "Dashboard"
   | "tunnels"
+	| "share"
   | "billing"
   | "tokens"
   | "profile"
@@ -118,6 +120,7 @@ type DashboardView =
 const DASHBOARD_VIEWS = new Set<DashboardView>([
   "Dashboard",
   "tunnels",
+	"share",
   "billing",
   "tokens",
   "profile",
@@ -143,6 +146,7 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { id: "Dashboard", label: "Dashboard", icon: LayoutDashboard },
       { id: "tunnels", label: "Tunnels", icon: Network },
+	  { id: "share", label: "Share", icon: HardDrive },
     ],
   },
   {
@@ -157,6 +161,7 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
 const VIEW_COPY: Record<DashboardView, { title: string; description: string }> = {
   Dashboard: { title: "Dashboard", description: "Your tunnels, traffic, and next action in one place." },
   tunnels: { title: "Tunnels", description: "Manage public endpoints connected to your local services." },
+	share: { title: "File sharing", description: "Upload persistent files or share local folders from the CLI." },
   billing: { title: "Billing", description: "Manage your plan, limits, and future invoices." },
   tokens: { title: "API keys & tokens", description: "Authenticate trusted machines and CI environments." },
   profile: { title: "Profile", description: "Manage your photo, personal details, and sign-in security." },
@@ -391,6 +396,7 @@ export function DashboardClient() {
               busyAction={busyAction}
             />
           )}
+		  {view === "share" && authToken && <SharePanel authToken={authToken} onAuthError={handleAuthError} />}
           {view === "billing" && (
             <BillingPanel
               billing={data.billing}

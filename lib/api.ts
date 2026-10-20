@@ -359,6 +359,92 @@ export interface DashboardData {
   billing?: BillingData;
 }
 
+export interface CloudShare {
+	id: string;
+	url?: string;
+	filename: string;
+	mimeType: string;
+	size: number;
+	expiresAt: string;
+	revoked: boolean;
+	passwordProtected: boolean;
+	downloads: number;
+	created: string;
+	previewable: boolean;
+}
+
+export interface CloudSharesResponse {
+	items: CloudShare[];
+	storage: { usedBytes: number; quotaBytes: number; remainingBytes: number };
+	maxUploadBytes: number;
+}
+
+export async function getCloudShares(token: string): Promise<CloudSharesResponse> {
+	const res = await fetch(`${apiBase()}/api/v1/shares`, { headers: { Authorization: token }, cache: "no-store" });
+	if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+	if (!res.ok) throw new Error(await parseError(res, "Couldn't load shared files."));
+	return (await res.json()) as CloudSharesResponse;
+}
+
+export function uploadCloudShare(token: string, file: File, expiresAt: string, password: string, onProgress: (percent: number) => void): Promise<CloudShare> {
+	return new Promise((resolve, reject) => {
+		const request = new XMLHttpRequest();
+		request.open("POST", `${apiBase()}/api/v1/shares`);
+		request.setRequestHeader("Authorization", token);
+		request.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
+		request.onerror = () => reject(new Error("Upload failed. Check your connection and try again."));
+		request.onload = () => {
+			if (request.status === 401 || request.status === 403) { reject(new UnauthorizedError()); return; }
+			let body: CloudShare | ApiError = {};
+			try { body = JSON.parse(request.responseText) as CloudShare | ApiError; } catch {}
+			if (request.status < 200 || request.status >= 300) { reject(new Error((body as ApiError).error || "Upload failed.")); return; }
+			resolve(body as CloudShare);
+		};
+		const form = new FormData();
+		form.append("expiresAt", expiresAt);
+		form.append("password", password);
+		form.append("file", file, file.name);
+		request.send(form);
+	});
+}
+
+export async function updateCloudShare(token: string, id: string, expiresAt: string, password?: string): Promise<CloudShare> {
+	const body: { expiresAt: string; password?: string } = { expiresAt };
+	if (password !== undefined) body.password = password;
+	const res = await fetch(`${apiBase()}/api/v1/shares/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: token }, body: JSON.stringify(body) });
+	if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+	if (!res.ok) throw new Error(await parseError(res, "Couldn't update this share."));
+	return (await res.json()) as CloudShare;
+}
+
+export async function revokeCloudShare(token: string, id: string): Promise<void> {
+	const res = await fetch(`${apiBase()}/api/v1/shares/${encodeURIComponent(id)}/revoke`, { method: "POST", headers: { Authorization: token } });
+	if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+	if (!res.ok) throw new Error(await parseError(res, "Couldn't revoke this share."));
+}
+
+export async function deleteCloudShare(token: string, id: string): Promise<void> {
+	const res = await fetch(`${apiBase()}/api/v1/shares/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: token } });
+	if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+	if (!res.ok) throw new Error(await parseError(res, "Couldn't delete this file."));
+}
+
+export async function getPublicShare(token: string): Promise<CloudShare> {
+	const res = await fetch(`${apiBase()}/api/v1/public/shares/${encodeURIComponent(token)}`, { cache: "no-store", credentials: "include" });
+	if (!res.ok) { const state = await parseError(res, "This sharing link is unavailable."); const error = new Error(state); (error as Error & { status?: number }).status = res.status; throw error; }
+	return (await res.json()) as CloudShare;
+}
+
+export async function unlockPublicShare(token: string, password: string): Promise<void> {
+	const res = await fetch(`${apiBase()}/api/v1/public/shares/${encodeURIComponent(token)}/unlock`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }), credentials: "include" });
+	if (!res.ok) throw new Error(await parseError(res, "Invalid password."));
+}
+
+export function publicShareContentURL(token: string, preview = false, download = false): string {
+	const query = new URLSearchParams(); if (preview) query.set("preview", "1"); if (download) query.set("download", "1");
+	return `${apiBase()}/api/v1/public/shares/${encodeURIComponent(token)}/content?${query.toString()}`;
+}
+
 export type UsageRange = "hour" | "day" | "week";
 
 export interface UsagePoint {
