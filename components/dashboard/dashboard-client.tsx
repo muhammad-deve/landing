@@ -396,7 +396,7 @@ export function DashboardClient() {
               busyAction={busyAction}
             />
           )}
-		  {view === "share" && authToken && <SharePanel authToken={authToken} onAuthError={handleAuthError} />}
+		  {view === "share" && authToken && <SharePanel authToken={authToken} onAuthError={handleAuthError} onUpgrade={() => navigate("billing")} />}
           {view === "billing" && (
             <BillingPanel
               billing={data.billing}
@@ -1064,6 +1064,11 @@ const PLAN_LIMIT_COMPARISON = [
   { label: "Monthly traffic", free: "5 GB", pro: "70 GB" },
   { label: "Device tokens", free: "1", pro: "5" },
   { label: "Custom subdomains", free: "Not included", pro: "Included" },
+  { label: "File storage", free: "100 MB", pro: "5 GB" },
+  { label: "Largest shared file", free: "25 MB", pro: "500 MB" },
+  { label: "Shared files kept", free: "Up to 3 days", pro: "Up to 30 days" },
+  { label: "Downloads per file", free: "100", pro: "Unlimited" },
+  { label: "Direct file links", free: "Not included", pro: "Included" },
 ];
 
 function BillingPanel({ billing, authToken, reservedCount, onChange, onAuthError }: { billing?: BillingData; authToken: string | null; reservedCount: number; onChange: () => void | Promise<void>; onAuthError: () => void }) {

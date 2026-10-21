@@ -7,7 +7,7 @@ import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 export const metadata: Metadata = pageMetadata({
   title: "Pricing",
   description:
-    "Compare GoPort Free and Pro plans for active tunnels, monthly traffic, custom subdomains, request inspection, and connected devices.",
+    "Compare GoPort Free and Pro plans for active tunnels, monthly traffic, custom subdomains, file sharing, request inspection, and connected devices.",
   path: "/pricing",
 });
 

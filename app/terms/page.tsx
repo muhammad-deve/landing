@@ -20,7 +20,7 @@ const SUMMARY: LegalSummaryItem[] = [
   },
   {
     title: "Plan limits",
-    text: "Free: 1 tunnel and 5 GB a month. Pro: up to 10 tunnels and 70 GB a month. Limits are enforced automatically.",
+    text: "Free: 1 tunnel, 5 GB a month and 100 MB of shared files. Pro: up to 10 tunnels, 70 GB a month and 5 GB of shared files. Limits are enforced automatically.",
   },
   {
     title: "Billing",
@@ -159,13 +159,15 @@ const CLAUSES: LegalClause[] = [
     body: (
       <>
         <p>
-          The Free plan includes 1 active tunnel, 5 GB of traffic a month, a random GoPort address, and 1 connected
-          device. Pro includes up to 10 active tunnels, 70 GB of traffic a month, custom GoPort subdomains, and up to
-          5 connected devices. The <Link href="/pricing">pricing page</Link> always lists the current plans.
+          The Free plan includes 1 active tunnel, 5 GB of traffic a month, a random GoPort address, 1 connected
+          device, and 100 MB of file sharing storage (files up to 25 MB, kept up to 3 days, 100 downloads each). Pro
+          includes up to 10 active tunnels, 70 GB of traffic a month, custom GoPort subdomains, up to 5 connected
+          devices, and 5 GB of file sharing storage (files up to 500 MB, kept up to 30 days, direct file links). The{" "}
+          <Link href="/pricing">pricing page</Link> always lists the current plans.
         </p>
         <p>
           When you reach a limit, the Service stops the action instead of charging you more: new tunnels won’t open,
-          and traffic stops until the next monthly period. We may change the Free plan at any time. We won’t reduce
+          traffic stops until the next monthly period, and uploads stop until you free up space. We may change the Free plan at any time. We won’t reduce
           what a paid plan includes during a period you have already paid for.
         </p>
         <p>
