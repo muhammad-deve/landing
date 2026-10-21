@@ -10,6 +10,7 @@ import {
 	EyeOff,
 	File,
 	FileArchive,
+	FileCode,
 	FileImage,
 	FileQuestion,
 	FileText,
@@ -50,6 +51,7 @@ function countdown(seconds: number) {
 
 function fileIcon(item: CloudShare, className: string) {
 	if (item.mimeType.startsWith("image/")) return <FileImage className={className} />;
+	if (item.mimeType.startsWith("text/html")) return <FileCode className={className} />;
 	if (item.mimeType.includes("pdf") || item.mimeType.startsWith("text/")) return <FileText className={className} />;
 	if (item.mimeType.includes("zip")) return <FileArchive className={className} />;
 	return <File className={className} />;
@@ -286,10 +288,34 @@ function Preview({ item, token }: { item: CloudShare; token: string }) {
 			</div>
 		);
 	}
+	if (item.mimeType.startsWith("text/html")) return <HtmlPreview src={src} title={item.filename} />;
 	if (item.mimeType.startsWith("text/")) return <TextPreview src={src} />;
 	if (touch === null) return <div className="min-h-72 bg-secondary/35" />;
 	if (touch) return <PdfPages src={src} title={item.filename} openURL={src} />;
 	return <iframe src={src} title={`Preview of ${item.filename}`} className="h-[78vh] w-full border-0 bg-white" />;
+}
+
+/**
+ * Shows a shared web page in a sandbox. The server sends the same sandbox as a
+ * header; the attribute here is a second lock. The page gets an opaque origin,
+ * so it can't read goport.uz storage or cookies, and it can't submit forms.
+ */
+function HtmlPreview({ src, title }: { src: string; title: string }) {
+	return (
+		<div>
+			<p className="flex items-start gap-2 border-b border-border/70 bg-secondary/40 px-4 py-2.5 text-xs leading-5 text-muted-foreground sm:px-6">
+				<ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
+				Web page shared by a GoPort user, shown in a sandbox. It can&apos;t see your accounts or send forms. Never type passwords or card details into it.
+			</p>
+			<iframe
+				src={src}
+				title={`Preview of ${title}`}
+				sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+				referrerPolicy="no-referrer"
+				className="h-[75vh] w-full border-0 bg-white"
+			/>
+		</div>
+	);
 }
 
 const TEXT_PREVIEW_BYTES = 256 * 1024;

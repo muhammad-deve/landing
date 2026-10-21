@@ -9,6 +9,7 @@ import {
 	ExternalLink,
 	File,
 	FileArchive,
+	FileCode,
 	FileImage,
 	FileText,
 	FileUp,
@@ -91,6 +92,7 @@ const EXPIRY_PRESETS = [1, 24, 72, 168, 336, 720];
 
 function fileIcon(mimeType: string, className: string) {
 	if (mimeType.startsWith("image/")) return <FileImage className={className} />;
+	if (mimeType.startsWith("text/html")) return <FileCode className={className} />;
 	if (mimeType.includes("pdf") || mimeType.startsWith("text/")) return <FileText className={className} />;
 	if (mimeType.includes("zip")) return <FileArchive className={className} />;
 	return <File className={className} />;
