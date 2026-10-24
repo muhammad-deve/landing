@@ -33,7 +33,8 @@ const PLATFORMS = [
     label: "Linux",
     icon: LinuxIcon,
     prompt: "$",
-    command: "curl -fsSL https://github.com/muhammad-deve/GoPort/releases/latest/download/goport-linux-amd64 -o /usr/local/bin/goport && chmod +x /usr/local/bin/goport",
+    // install.sh (landing/public) picks the right build and checks its SHA-256.
+    command: "curl -fsSL https://goport.uz/install.sh | sh",
     downloads: [{ label: "Download for Linux", href: `${RELEASE_DOWNLOAD_URL}/goport-linux-amd64` }],
   },
 ] as const;
