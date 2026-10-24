@@ -34,7 +34,7 @@ export function Hero() {
 
             <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-11 rounded-full bg-primary px-5 text-sm text-primary-foreground shadow-[0_10px_30px_-16px] shadow-primary hover:bg-primary/90 sm:text-base">
-                <Link href="/signup">Create free account <ArrowRight className="size-4" /></Link>
+                <a href="/signup">Create free account <ArrowRight className="size-4" /></a>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-11 rounded-full border-border bg-card/70 px-5 text-sm text-foreground shadow-none hover:bg-secondary sm:text-base">
                 <Link href="/self-hosting">Self-host in 5 minutes</Link>

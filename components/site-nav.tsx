@@ -61,7 +61,7 @@ export function SiteNav() {
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
-          <Button asChild variant="ghost" className="hidden text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"><Link href="/login">Log in</Link></Button>
+          <Button asChild variant="ghost" className="hidden text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"><a href="/login">Log in</a></Button>
           <DownloadButton />
           <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label="Toggle navigation" className="flex size-9 items-center justify-center rounded-full border border-border bg-card/70 text-foreground lg:hidden">
             {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
@@ -77,7 +77,7 @@ export function SiteNav() {
                 {link.label}
               </Link>
             ))}
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary sm:hidden">Log in</Link>
+            <a href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary sm:hidden">Log in</a>
           </div>
         </div>
       )}

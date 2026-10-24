@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
-import Script from "next/script";
 import "./globals.css";
+import { SiteAnalytics } from "@/components/site-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import { jsonLd, SITE_STRUCTURED_DATA } from "@/lib/seo";
 
@@ -83,31 +82,12 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} bg-background`}
       suppressHydrationWarning
     >
-      <head>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-4RDRG6148J"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-4RDRG6148J');
-          `}
-        </Script>
-        <script
-          defer
-          src="https://cloud.umami.is/script.js"
-          data-website-id="f19434a8-bf0e-4b94-9bcd-e7980e56aac0"
-        />
-      </head>
       <body className="font-sans antialiased">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_STRUCTURED_DATA) }} />
         <ThemeProvider>
           {children}
         </ThemeProvider>
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        <SiteAnalytics />
       </body>
     </html>
   );

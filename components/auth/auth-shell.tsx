@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { GoPortLogo } from "@/components/goport-logo";
 
@@ -20,20 +19,22 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-[#070b10]/70 dark:block" />
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center p-5 sm:p-6">
-        <Link
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics out of this page */}
+        <a
           href="/"
           className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground backdrop-blur-xl transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
           Back home
-        </Link>
+        </a>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
-          <Link href="/" className="mb-6 transition-opacity hover:opacity-75">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics out of this page */}
+          <a href="/" className="mb-6 transition-opacity hover:opacity-75">
             <GoPortLogo className="h-9 w-auto text-foreground" />
-          </Link>
+          </a>
           <h1 className="text-3xl font-semibold tracking-[-0.035em] text-foreground">{title}</h1>
           {subtitle ? <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{subtitle}</p> : null}
         </div>

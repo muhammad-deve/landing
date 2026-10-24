@@ -212,10 +212,10 @@ export function Quickstart() {
             <h3 className="mt-6 text-xl font-semibold tracking-[-0.025em] text-foreground">Create a CLI token</h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">Log in to your GoPort account—or create one first—then generate a named CLI token in the dashboard.</p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-none hover:bg-primary/90"><Link href="/login">Log in</Link></Button>
-              <Button asChild size="sm" variant="outline" className="rounded-full border-border bg-transparent text-foreground shadow-none hover:bg-secondary"><Link href="/signup">Create account</Link></Button>
+              <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-none hover:bg-primary/90"><a href="/login">Log in</a></Button>
+              <Button asChild size="sm" variant="outline" className="rounded-full border-border bg-transparent text-foreground shadow-none hover:bg-secondary"><a href="/signup">Create account</a></Button>
             </div>
-            <Link href="/dashboard#tokens" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline decoration-primary/60 underline-offset-4 hover:decoration-primary">Create a CLI token <ArrowRight className="size-3.5" /></Link>
+            <a href="/dashboard#tokens" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline decoration-primary/60 underline-offset-4 hover:decoration-primary">Create a CLI token <ArrowRight className="size-3.5" /></a>
           </li>
 
           <li className="border-b border-border p-6 sm:p-8 lg:border-b-0">
@@ -284,7 +284,7 @@ export function Pricing() {
             <ul className="my-7 space-y-3 border-y border-border py-6">
               {plan.items.map((item) => <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{item}</li>)}
             </ul>
-            <Button asChild variant={plan.popular ? "default" : "outline"} className={`mt-auto w-full rounded-full ${plan.popular ? "bg-primary text-primary-foreground shadow-none hover:bg-primary/90" : "border-border bg-transparent text-foreground shadow-none hover:bg-secondary"}`}><Link href="/signup">{plan.action}</Link></Button>
+            <Button asChild variant={plan.popular ? "default" : "outline"} className={`mt-auto w-full rounded-full ${plan.popular ? "bg-primary text-primary-foreground shadow-none hover:bg-primary/90" : "border-border bg-transparent text-foreground shadow-none hover:bg-secondary"}`}><a href="/signup">{plan.action}</a></Button>
           </article>
         ))}
       </div>

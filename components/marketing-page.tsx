@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PageBackground } from "@/components/page-background";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { isPrivatePath } from "@/lib/private-paths";
 
 interface MarketingPageProps {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ export function SubpageHero({
   primaryLabel = "Create free account",
   primaryHref = "/signup",
 }: SubpageHeroProps) {
+  const PrimaryLink = isPrivatePath(primaryHref) ? "a" : Link;
   return (
     <header className="mx-auto grid w-full max-w-7xl gap-10 px-5 pb-12 pt-32 sm:px-7 sm:pt-36 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,0.78fr)] lg:items-center lg:gap-16 lg:pb-16 lg:pt-40">
       <div className="max-w-2xl">
@@ -51,7 +53,7 @@ export function SubpageHero({
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button asChild size="lg" className="rounded-full bg-primary px-6 text-primary-foreground shadow-none hover:bg-primary/90">
-            <Link href={primaryHref}>{primaryLabel}<ArrowRight className="size-4" /></Link>
+            <PrimaryLink href={primaryHref}>{primaryLabel}<ArrowRight className="size-4" /></PrimaryLink>
           </Button>
           <Button asChild size="lg" variant="outline" className="rounded-full border-border bg-transparent px-6 text-foreground shadow-none hover:bg-secondary">
             <Link href="/docs">Read the docs</Link>

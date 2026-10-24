@@ -168,9 +168,9 @@ export function DownloadButton() {
           </div>
           <p className="mt-3 text-xs leading-5 text-muted-foreground">
             Replace <code className="font-mono text-foreground">&lt;token&gt;</code> with a CLI token from your{" "}
-            <Link href="/dashboard#tokens" onClick={() => setOpen(false)} className="text-foreground underline decoration-border underline-offset-4 hover:decoration-primary">
+            <a href="/dashboard#tokens" onClick={() => setOpen(false)} className="text-foreground underline decoration-border underline-offset-4 hover:decoration-primary">
               dashboard
-            </Link>
+            </a>
             .
           </p>
           {platform === "macos" && (

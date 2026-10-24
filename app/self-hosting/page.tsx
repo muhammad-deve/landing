@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
-import Link from "next/link";
 import { ArrowRight, GitFork, Globe, Server, ShieldCheck } from "lucide-react";
 import { MarketingPage, SubpageHero } from "@/components/marketing-page";
 import { SectionHeader } from "@/components/section-header";
@@ -141,9 +140,9 @@ export default function SelfHostingPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg" className="rounded-full bg-primary px-6 text-primary-foreground shadow-none hover:bg-primary/90">
-              <Link href="/signup">
+              <a href="/signup">
                 Use the hosted plan <ArrowRight className="size-4" />
-              </Link>
+              </a>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full border-border bg-transparent px-6 text-foreground shadow-none hover:bg-secondary">
               <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener">
