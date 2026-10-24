@@ -678,6 +678,8 @@ function ShareRow({
 	};
 
 	const passwordTooShort = mode === "page" && password.length > 0 && password.length < 8;
+	// Retention counts from the upload; the current expiry can always be kept.
+	const latestExpiry = new Date(Math.max(new Date(item.created).getTime() + maxRetentionHours * 3_600_000, new Date(item.expiresAt).getTime()));
 	const limitReached = Boolean(item.downloadLimit && item.downloads >= item.downloadLimit);
 	const status = item.revoked
 		? { label: "Revoked", className: "bg-destructive/10 text-destructive" }
@@ -787,11 +789,11 @@ function ShareRow({
 								type="datetime-local"
 								value={expires}
 								min={localInputValue(new Date())}
-								max={localInputValue(new Date(Date.now() + maxRetentionHours * 3_600_000))}
+								max={localInputValue(latestExpiry)}
 								onChange={(event) => setExpires(event.target.value)}
 								className="mt-1.5 bg-background"
 							/>
-							<span className="mt-1.5 block font-normal">Up to {durationText(maxRetentionHours)} from now.</span>
+							<span className="mt-1.5 block font-normal">Up to {durationText(maxRetentionHours)} after upload.</span>
 						</label>
 						{mode === "page" && (
 							<div className="text-xs font-medium text-muted-foreground">

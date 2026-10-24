@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -16,6 +15,7 @@ import {
 	FileText,
 	KeyRound,
 	Loader2,
+	LockKeyhole,
 	RotateCw,
 	ShieldCheck,
 	ShieldOff,
@@ -24,7 +24,7 @@ import {
 import { GoPortLogo } from "@/components/goport-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CloudShare, getPublicShare, publicShareContentURL, PublicShareError, PublicShareState, unlockPublicShare } from "@/lib/api";
+import { getPublicShare, PublicShare, publicShareContentURL, PublicShareError, PublicShareState, unlockPublicShare } from "@/lib/api";
 import { PdfPages } from "./pdf-pages";
 
 function bytes(value: number) {
@@ -49,11 +49,12 @@ function countdown(seconds: number) {
 	return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function fileIcon(item: CloudShare, className: string) {
-	if (item.mimeType.startsWith("image/")) return <FileImage className={className} />;
-	if (item.mimeType.startsWith("text/html")) return <FileCode className={className} />;
-	if (item.mimeType.includes("pdf") || item.mimeType.startsWith("text/")) return <FileText className={className} />;
-	if (item.mimeType.includes("zip")) return <FileArchive className={className} />;
+function fileIcon(item: PublicShare, className: string) {
+	const mimeType = item.mimeType ?? "";
+	if (mimeType.startsWith("image/")) return <FileImage className={className} />;
+	if (mimeType.startsWith("text/html")) return <FileCode className={className} />;
+	if (mimeType.includes("pdf") || mimeType.startsWith("text/")) return <FileText className={className} />;
+	if (mimeType.includes("zip")) return <FileArchive className={className} />;
 	return <File className={className} />;
 }
 
@@ -79,10 +80,9 @@ function useTouchLayout() {
 }
 
 export function PublicShareClient({ token }: { token: string }) {
-	const [item, setItem] = useState<CloudShare | null>(null);
+	const [item, setItem] = useState<PublicShare | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [problem, setProblem] = useState<{ state: PublicShareState; message: string } | null>(null);
-	const [unlocked, setUnlocked] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -100,6 +100,13 @@ export function PublicShareClient({ token }: { token: string }) {
 	useEffect(() => {
 		void load();
 	}, [load]);
+
+	// The file's details arrive only once the password is accepted.
+	const showUnlocked = useCallback(async () => {
+		const next = await getPublicShare(token);
+		if (next.locked) throw new Error("Couldn't open the file. Allow cookies for this site and try again.");
+		setItem({ ...next, locked: false });
+	}, [token]);
 
 	if (loading) {
 		return (
@@ -129,14 +136,16 @@ export function PublicShareClient({ token }: { token: string }) {
 		);
 	}
 
-	const authorized = !item.passwordProtected || unlocked;
+	// Servers before the locked view sent no "locked" field.
+	const locked = item.locked ?? item.passwordProtected;
 	return (
 		<div className="min-h-screen bg-[#f2f7f6] px-3 py-4 text-foreground dark:bg-[#071012] sm:px-6 sm:py-10">
 			<div className="mx-auto max-w-5xl">
 				<header className="flex items-center justify-between gap-3 px-1">
-					<Link href="/" aria-label="GoPort home">
+					{/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics off share pages */}
+					<a href="/" aria-label="GoPort home">
 						<GoPortLogo className="h-6 w-auto sm:h-7" />
-					</Link>
+					</a>
 					<span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground sm:px-3 sm:py-1.5 sm:text-xs">
 						<ShieldCheck className="size-3.5 text-primary" />
 						Secure file share
@@ -146,18 +155,18 @@ export function PublicShareClient({ token }: { token: string }) {
 					<section className="flex flex-col gap-4 border-b border-border/70 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-8">
 						<div className="flex min-w-0 flex-1 items-start gap-3.5 sm:items-center sm:gap-5">
 							<span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:size-14 sm:rounded-2xl">
-								{fileIcon(item, "size-5 sm:size-7")}
+								{locked ? <LockKeyhole className="size-5 sm:size-7" /> : fileIcon(item, "size-5 sm:size-7")}
 							</span>
 							<div className="min-w-0">
-								<h1 className="line-clamp-3 text-lg font-semibold leading-snug tracking-[-.03em] [overflow-wrap:anywhere] sm:text-2xl" title={item.filename}>
-									{item.filename}
+								<h1 className="line-clamp-3 text-lg font-semibold leading-snug tracking-[-.03em] [overflow-wrap:anywhere] sm:text-2xl" title={locked ? undefined : item.filename}>
+									{locked ? "Password-protected file" : item.filename}
 								</h1>
 								<p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-									{bytes(item.size)} · expires {formatDate(item.expiresAt)}
+									{locked ? `Expires ${formatDate(item.expiresAt)}` : `${bytes(item.size ?? 0)} · expires ${formatDate(item.expiresAt)}`}
 								</p>
 							</div>
 						</div>
-						{authorized && (
+						{!locked && (
 							<Button asChild size="lg" className="h-11 w-full rounded-xl sm:w-auto">
 								<a href={publicShareContentURL(token, false, true)}>
 									<Download className="size-4" />
@@ -166,8 +175,8 @@ export function PublicShareClient({ token }: { token: string }) {
 							</Button>
 						)}
 					</section>
-					{!authorized ? (
-						<PasswordForm token={token} initialWait={item.retryAfter ?? 0} onUnlocked={() => setUnlocked(true)} />
+					{locked ? (
+						<PasswordForm token={token} initialWait={item.retryAfter ?? 0} onUnlocked={showUnlocked} />
 					) : item.previewable ? (
 						<Preview item={item} token={token} />
 					) : (
@@ -180,9 +189,10 @@ export function PublicShareClient({ token }: { token: string }) {
 				</main>
 				<p className="mt-5 px-2 text-center text-xs leading-5 text-muted-foreground">
 					Shared with{" "}
-					<Link href="/" className="font-medium text-foreground/80 hover:underline">
+					{/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics off share pages */}
+					<a href="/" className="font-medium text-foreground/80 hover:underline">
 						GoPort
-					</Link>{" "}
+					</a>{" "}
 					· files are removed when they expire or are deleted
 				</p>
 			</div>
@@ -190,7 +200,7 @@ export function PublicShareClient({ token }: { token: string }) {
 	);
 }
 
-function PasswordForm({ token, initialWait, onUnlocked }: { token: string; initialWait: number; onUnlocked: () => void }) {
+function PasswordForm({ token, initialWait, onUnlocked }: { token: string; initialWait: number; onUnlocked: () => Promise<void> }) {
 	const [password, setPassword] = useState("");
 	const [visible, setVisible] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -218,7 +228,7 @@ function PasswordForm({ token, initialWait, onUnlocked }: { token: string; initi
 		try {
 			await unlockPublicShare(token, password);
 			setPassword("");
-			onUnlocked();
+			await onUnlocked();
 		} catch (err) {
 			if (err instanceof PublicShareError && err.state === "locked") {
 				setNow(Date.now());
@@ -277,22 +287,24 @@ function PasswordForm({ token, initialWait, onUnlocked }: { token: string; initi
 	);
 }
 
-function Preview({ item, token }: { item: CloudShare; token: string }) {
+function Preview({ item, token }: { item: PublicShare; token: string }) {
 	const touch = useTouchLayout();
 	const src = publicShareContentURL(token, true, false);
-	if (item.mimeType.startsWith("image/")) {
+	const mimeType = item.mimeType ?? "";
+	const filename = item.filename ?? "";
+	if (mimeType.startsWith("image/")) {
 		return (
 			<div className="flex min-h-64 items-center justify-center bg-secondary/35 p-3 sm:min-h-80 sm:p-6">
 				{/* eslint-disable-next-line @next/next/no-img-element */}
-				<img src={src} alt={item.filename} className="max-h-[75vh] w-auto max-w-full rounded-lg object-contain" />
+				<img src={src} alt={filename} className="max-h-[75vh] w-auto max-w-full rounded-lg object-contain" />
 			</div>
 		);
 	}
-	if (item.mimeType.startsWith("text/html")) return <HtmlPreview src={src} title={item.filename} />;
-	if (item.mimeType.startsWith("text/")) return <TextPreview src={src} />;
+	if (mimeType.startsWith("text/html")) return <HtmlPreview src={src} title={filename} />;
+	if (mimeType.startsWith("text/")) return <TextPreview src={src} />;
 	if (touch === null) return <div className="min-h-72 bg-secondary/35" />;
-	if (touch) return <PdfPages src={src} title={item.filename} openURL={src} />;
-	return <iframe src={src} title={`Preview of ${item.filename}`} className="h-[78vh] w-full border-0 bg-white" />;
+	if (touch) return <PdfPages src={src} title={filename} openURL={src} />;
+	return <iframe src={src} title={`Preview of ${filename}`} className="h-[78vh] w-full border-0 bg-white" />;
 }
 
 /**
@@ -364,9 +376,10 @@ function TextPreview({ src }: { src: string }) {
 function Shell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="flex min-h-screen flex-col items-center justify-center bg-[#f2f7f6] px-5 text-center dark:bg-[#071012]">
-			<Link href="/" aria-label="GoPort home" className="mb-10">
+			{/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics off share pages */}
+			<a href="/" aria-label="GoPort home" className="mb-10">
 				<GoPortLogo className="h-7 w-auto" />
-			</Link>
+			</a>
 			{children}
 		</div>
 	);

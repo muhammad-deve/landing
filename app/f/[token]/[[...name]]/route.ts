@@ -23,6 +23,17 @@ const FORWARD_RESPONSE = [
 
 type Context = { params: Promise<{ token: string; name?: string[] }> };
 
+/**
+ * The visitor's address as our proxy reported it. The API limits concurrent
+ * downloads per visitor; without this every direct-link visitor would count
+ * as this server.
+ */
+function visitorAddress(request: Request): string | null {
+	const forwarded = request.headers.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean);
+	const address = request.headers.get("x-real-ip")?.trim() || forwarded?.at(-1);
+	return address && /^[0-9A-Fa-f:.]{2,45}$/.test(address) ? address : null;
+}
+
 function redirect(location: string) {
 	return new Response(null, { status: 302, headers: { Location: location, "Cache-Control": "no-store" } });
 }
@@ -38,6 +49,8 @@ async function serve(request: Request, context: Context, method: "GET" | "HEAD")
 		const value = request.headers.get(name);
 		if (value) headers.set(name, value);
 	}
+	const visitor = visitorAddress(request);
+	if (visitor) headers.set("x-forwarded-for", visitor);
 
 	let upstream: Response;
 	try {
