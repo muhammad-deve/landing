@@ -22,6 +22,7 @@ import {
   EmailRegisteredError,
   startGoogleOAuth,
 } from "@/lib/api";
+import { looksLikeEmail } from "@/lib/email";
 import { PASSWORD_RULES, isPasswordValid } from "@/lib/password";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,7 @@ export function SignupForm() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const detailsValid =
-    name.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && accepted;
+    name.trim().length > 1 && looksLikeEmail(email) && accepted;
 
   const passwordValid = isPasswordValid(password);
   const confirmValid = confirm.length > 0 && password === confirm;
@@ -359,6 +360,7 @@ export function SignupForm() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Ada Lovelace"
           autoComplete="name"
+          maxLength={60}
           className="h-11 bg-background/60"
           required
         />

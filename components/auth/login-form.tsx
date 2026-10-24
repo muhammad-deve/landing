@@ -19,6 +19,7 @@ import {
   startGoogleOAuth,
   storeAuthSession,
 } from "@/lib/api";
+import { looksLikeEmail } from "@/lib/email";
 import { PASSWORD_RULES, isPasswordValid } from "@/lib/password";
 import { cn } from "@/lib/utils";
 
@@ -172,7 +173,7 @@ export function LoginForm() {
 
         <Button
           type="submit"
-          disabled={loading || !/\S+@\S+\.\S+/.test(email)}
+          disabled={loading || !looksLikeEmail(email)}
           className="h-11 w-full bg-primary font-medium text-primary-foreground hover:bg-primary/90"
         >
           {loading && <Loader2 className="size-4 animate-spin" />}
