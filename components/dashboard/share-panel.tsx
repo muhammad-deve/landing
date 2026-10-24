@@ -6,6 +6,7 @@ import {
 	CalendarClock,
 	Check,
 	Copy,
+	Ellipsis,
 	ExternalLink,
 	File,
 	FileArchive,
@@ -36,6 +37,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { copyText } from "@/lib/clipboard";
 import {
 	CloudShare,
@@ -741,27 +743,6 @@ function ShareRow({
 								{copied ? <Check className="size-4" /> : <Copy className="size-4" />}
 								{copied ? "Copied" : "Copy link"}
 							</Button>
-							{item.url && (
-								<Button variant="outline" size="sm" asChild className="rounded-lg">
-									<a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Open the link for ${item.filename}`}>
-										<ExternalLink className="size-4" />
-										Open
-									</a>
-								</Button>
-							)}
-							<Button
-								variant="outline"
-								size="sm"
-								aria-expanded={open}
-								className="rounded-lg"
-								onClick={() => {
-									if (!open) resetForm();
-									setOpen(!open);
-								}}
-							>
-								<CalendarClock className="size-4" />
-								Manage
-							</Button>
 							<Button variant="outline" size="sm" disabled={busy} className="rounded-lg" onClick={() => onConfirm({ kind: "revoke", item })}>
 								<ShieldOff className="size-4" />
 								Revoke
@@ -772,6 +753,34 @@ function ShareRow({
 						<Trash2 className="size-4" />
 						Delete
 					</Button>
+					{!item.revoked && (
+						<DropdownMenu modal={false}>
+							<DropdownMenuTrigger asChild>
+								<Button variant="outline" size="icon-sm" className="rounded-lg" aria-label={`More actions for ${item.filename}`}>
+									<Ellipsis className="size-4" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="min-w-40 rounded-lg">
+								{item.url && (
+									<DropdownMenuItem asChild>
+										<a href={item.url} target="_blank" rel="noopener noreferrer">
+											<ExternalLink />
+											Open
+										</a>
+									</DropdownMenuItem>
+								)}
+								<DropdownMenuItem
+									onSelect={() => {
+										if (!open) resetForm();
+										setOpen(!open);
+									}}
+								>
+									<CalendarClock />
+									{open ? "Close settings" : "Manage"}
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					)}
 				</div>
 			</div>
 
