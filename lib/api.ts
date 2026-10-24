@@ -110,12 +110,7 @@ export async function sendOtp(
     );
   }
   if (res.status === 429) {
-    const retryAfter = res.headers.get("Retry-After");
-    throw new Error(
-      retryAfter
-        ? `Too many requests. Try again in ${retryAfter}s.`
-        : "Too many requests. Please try again later.",
-    );
+    throw new Error(await parseError(res, "Too many attempts. Please try again later."));
   }
   if (!res.ok) {
     throw new Error(await parseError(res, "Failed to send code. Please try again."));
@@ -175,12 +170,7 @@ export async function forgotPassword(email: string): Promise<SendOtpResponse> {
   });
 
   if (res.status === 429) {
-    const retryAfter = res.headers.get("Retry-After");
-    throw new Error(
-      retryAfter
-        ? `Too many requests. Try again in ${retryAfter}s.`
-        : "Too many requests. Please try again later.",
-    );
+    throw new Error(await parseError(res, "Too many attempts. Please try again later."));
   }
   if (!res.ok) {
     throw new Error(await parseError(res, "Failed to send reset code. Please try again."));
@@ -275,6 +265,22 @@ export function readAuthSession(): LoginResponse | null {
 export function clearAuthSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+/**
+ * Log out: ask the API to end every dashboard session of this account, then
+ * forget the local one. The request is fire-and-forget, so a slow or failed
+ * call never blocks leaving the dashboard.
+ */
+export function logOut() {
+  const token = readAuthSession()?.token;
+  if (token) {
+    void fetch(`${apiBase()}/api/v1/account/logout`, {
+      method: "POST",
+      headers: { Authorization: token },
+    }).catch(() => {});
+  }
+  clearAuthSession();
 }
 
 export interface DashboardDomain {
@@ -375,6 +381,21 @@ export interface CloudShare {
 	downloadLimit?: number;
 	created: string;
 	previewable: boolean;
+}
+
+/**
+ * What the public share page receives. While `locked` (the password hasn't
+ * been entered), only the expiry is included.
+ */
+export interface PublicShare {
+	filename?: string;
+	mimeType?: string;
+	size?: number;
+	expiresAt: string;
+	passwordProtected: boolean;
+	/** Absent from servers older than the locked view. */
+	locked?: boolean;
+	previewable: boolean;
 	/** Seconds this visitor must still wait before trying a password again. */
 	retryAfter?: number;
 }
@@ -386,6 +407,8 @@ export interface SharePlanLimits {
 	maxRetentionHours: number;
 	/** Downloads allowed per file; 0 means unlimited. */
 	maxDownloads: number;
+	/** Files one account may keep; 0 means unlimited. */
+	maxFiles?: number;
 	directLinks: boolean;
 }
 
@@ -398,7 +421,7 @@ export interface ShareLimits {
 
 export interface CloudSharesResponse {
 	items: CloudShare[];
-	storage: { usedBytes: number; quotaBytes: number; remainingBytes: number };
+	storage: { usedBytes: number; quotaBytes: number; remainingBytes: number; files?: number };
 	maxUploadBytes: number;
 	limits?: ShareLimits;
 	chunkSize?: number;
@@ -595,7 +618,7 @@ async function publicShareError(res: Response, fallback: string): Promise<Public
 	return new PublicShareError(body.error || fallback, state, Number(body.attemptsLeft ?? 0), Number.isFinite(retryAfter) ? retryAfter : 0);
 }
 
-export async function getPublicShare(token: string): Promise<CloudShare> {
+export async function getPublicShare(token: string): Promise<PublicShare> {
 	let res: Response;
 	try {
 		res = await fetch(`${apiBase()}/api/v1/public/shares/${encodeURIComponent(token)}`, { cache: "no-store", credentials: "include" });
@@ -603,7 +626,7 @@ export async function getPublicShare(token: string): Promise<CloudShare> {
 		throw new PublicShareError(OFFLINE_MESSAGE, "offline");
 	}
 	if (!res.ok) throw await publicShareError(res, "This sharing link is unavailable.");
-	return (await res.json()) as CloudShare;
+	return (await res.json()) as PublicShare;
 }
 
 export async function unlockPublicShare(token: string, password: string): Promise<void> {
@@ -660,9 +683,10 @@ export class UnauthorizedError extends Error {
 }
 
 /** Fetch the authenticated user's dashboard (profile, tokens, stats, domains). */
-export async function getDashboard(token: string): Promise<DashboardData> {
+export async function getDashboard(token: string, signal?: AbortSignal): Promise<DashboardData> {
   const res = await fetch(`${apiBase()}/api/v1/dashboard`, {
     headers: { Authorization: token },
+    signal,
   });
 
   if (res.status === 401 || res.status === 403) {
@@ -685,7 +709,19 @@ export async function createBillingCheckout(
     body: JSON.stringify({ plan }),
   });
 
-  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
+  if (res.status === 401) throw new UnauthorizedError();
+  if (res.status === 403) {
+    // Our own 403 carries an "error" text (upgrades closed for this account);
+    // any other 403 is an auth problem.
+    let message = "";
+    try {
+      message = ((await res.json()) as ApiError)?.error ?? "";
+    } catch {
+      // ignore non-JSON bodies
+    }
+    if (!message) throw new UnauthorizedError();
+    throw new Error(message);
+  }
   if (!res.ok) {
     throw new Error(await parseError(res, "Couldn't start checkout. Please try again."));
   }
@@ -834,8 +870,7 @@ export async function requestEmailChange(authToken: string, email: string): Prom
 
   if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
   if (res.status === 429) {
-    const retryAfter = res.headers.get("Retry-After");
-    throw new Error(retryAfter ? `Try again in ${retryAfter}s.` : "Too many requests. Try again later.");
+    throw new Error(await parseError(res, "Too many attempts. Please try again later."));
   }
   if (!res.ok) {
     throw new Error(await parseError(res, "Couldn't send the verification code."));

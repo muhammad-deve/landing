@@ -7,19 +7,25 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { completeGoogleOAuth } from "@/lib/api";
 
+const OAUTH_ERRORS = new Map([
+  ["access_denied", "Google sign-in was canceled."],
+  ["temporarily_unavailable", "Google sign-in is temporarily unavailable. Please try again."],
+  ["server_error", "Google sign-in is temporarily unavailable. Please try again."],
+  ["admin_policy_enforced", "Your Google Workspace admin doesn't allow signing in to GoPort with this account."],
+  ["org_internal", "This Google account can't be used to sign in to GoPort."],
+]);
+
 export function GoogleCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const providerError = searchParams.get("error_description") ?? searchParams.get("error");
+    // Only the error code is used. error_description is free text anyone can
+    // put in the link, so it is never shown.
+    const providerError = searchParams.get("error");
     if (providerError) {
-      setError(
-        providerError === "access_denied"
-          ? "Google sign-in was canceled."
-          : providerError,
-      );
+      setError(OAUTH_ERRORS.get(providerError) ?? "Google sign-in failed. Please try again.");
       return;
     }
 

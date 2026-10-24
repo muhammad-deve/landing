@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -88,6 +87,7 @@ import {
   getBillingPortalUrl,
   changeBillingSubscriptionPlan,
   clearAuthSession,
+  logOut,
   changePassword,
   confirmEmailChange,
   createBillingCheckout,
@@ -106,6 +106,7 @@ import {
   updateStoredProfileName,
 } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
+import { looksLikeEmail } from "@/lib/email";
 import { isPasswordValid } from "@/lib/password";
 
 type DashboardView =
@@ -299,7 +300,7 @@ export function DashboardClient() {
   };
 
   const logout = () => {
-    clearAuthSession();
+    logOut();
     router.replace("/login");
   };
 
@@ -476,7 +477,8 @@ function DashboardSidebar({
       {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-50 cursor-pointer bg-[#102124]/35 backdrop-blur-sm lg:hidden" />}
       <aside className={`fixed inset-y-0 left-0 z-[60] flex w-64 flex-col border-r border-border/80 bg-background px-3.5 py-4 transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-12 items-center justify-between px-2">
-          <Link href="/" aria-label="GoPort home"><GoPortLogo className="h-6 w-auto text-foreground" /></Link>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full load keeps analytics out of the dashboard */}
+          <a href="/" aria-label="GoPort home"><GoPortLogo className="h-6 w-auto text-foreground" /></a>
           <button type="button" onClick={onClose} className={`${SIDEBAR_PRESS} flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden`} aria-label="Close navigation"><X className="size-4" /></button>
         </div>
 
@@ -1681,7 +1683,7 @@ function ChangeEmailPanel({ authToken, currentEmail, onChange, onAuthError }: { 
             <Label htmlFor="new-email">New email address</Label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input id="new-email" type="email" value={newEmail} onChange={(event) => { setNewEmail(event.target.value); setChanged(false); }} placeholder="you@company.com" autoComplete="email" required className="h-10 rounded-xl bg-secondary/20" />
-              <Button type="submit" disabled={!/\S+@\S+\.\S+/.test(newEmail) || newEmail.trim().toLowerCase() === currentEmail.toLowerCase() || loading} className="h-10 shrink-0 rounded-xl bg-primary px-4 text-primary-foreground shadow-none">{loading && <Loader2 className="size-4 animate-spin" />}Send code</Button>
+              <Button type="submit" disabled={!looksLikeEmail(newEmail) || newEmail.trim().toLowerCase() === currentEmail.toLowerCase() || loading} className="h-10 shrink-0 rounded-xl bg-primary px-4 text-primary-foreground shadow-none">{loading && <Loader2 className="size-4 animate-spin" />}Send code</Button>
             </div>
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">We will verify the new address before replacing this one.</p>
